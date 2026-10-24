@@ -57,6 +57,10 @@
   .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
   .brand { display: grid; gap: 2px; }
   .brand small { color: var(--muted); }
+  .top-right { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+  .lang { display: inline-flex; background: var(--sunken); border: 1px solid var(--line); border-radius: 8px; padding: 3px; gap: 2px; }
+  .lang button { border: 0; background: none; padding: 6px 10px; border-radius: 6px; color: var(--muted); font: inherit; font-weight: 600; font-size: 12px; cursor: pointer; letter-spacing: .04em; }
+  .lang button[aria-pressed="true"] { background: var(--surface); color: var(--fg); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
   nav { display: flex; gap: 4px; background: var(--sunken); border: 1px solid var(--line); border-radius: 8px; padding: 3px; overflow-x: auto; }
   nav a { padding: 6px 12px; border-radius: 6px; color: var(--muted); text-decoration: none; font-weight: 500; white-space: nowrap; }
   nav a[aria-current="page"] { background: var(--surface); color: var(--fg); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
@@ -435,6 +439,8 @@
 <div class="wrap">
   <div class="top">
     <div class="brand"><h1>ETP Portal</h1><small>Emerging Talent Program (ETP) 2026 · KPI 10 Talent Pool Growth Index <span id="whoami"></span></small></div>
+    <div class="top-right">
+    <div class="lang" role="group" aria-label="Language"><button type="button" data-lang="en" aria-pressed="true">EN</button><button type="button" data-lang="ms" aria-pressed="false">BM</button></div>
     <nav aria-label="Portal sections">
       <a href="#overview" data-view="overview">Overview</a>
       <a href="#summary" data-view="summary">Summary</a>
@@ -444,6 +450,7 @@
       <a href="#ninebox" data-view="ninebox">9-Box</a>
       <a href="#talent" data-view="talent">Talent</a>
     </nav>
+    </div>
   </div>
 
   <div class="banner" id="dbBanner" hidden></div>
@@ -644,7 +651,7 @@
 
   <!-- SUMMARY -->
   <section id="view-summary" class="stack" hidden>
-    <div class="export-bar"><span class="note">Management summary of the current data, as a 2-page A4 PDF.</span><button class="btn primary pdfBtn" type="button" hidden>Download PDF summary</button></div>
+    <div class="export-bar"><span class="note">Management summary of the current data, as a 2-page A4 PDF.</span><button class="btn primary pdfBtn" type="button" hidden>Download PDF summary</button><button class="btn pptBtn" type="button" hidden>Download PowerPoint</button></div>
     <div class="kpis">
       <div class="panel kpi accent"><div class="label">Total talent</div><div class="value" id="kTotal">0</div><div class="note">identified in ETP 2026</div></div>
       <div class="panel kpi" id="kTpgCard"><div class="label">Official TPG Index</div><div class="value" id="kTpg">0%</div><div class="note" id="kTpgNote">0 talent achieved &amp; verified</div></div>
@@ -842,7 +849,7 @@
       <div class="toolbar">
         <input type="search" id="hQ" placeholder="Search talent or staff no." aria-label="Search Harrison results">
         <select id="hUnit" aria-label="Filter by department or division"><option value="">All departments / divisions</option></select>
-        <select id="hCat" aria-label="Filter by category"><option value="">All categories</option><option>Red</option><option>Yellow</option><option>Green</option><option value="diff" id="hCatDiffOpt">≠ Differs from colour count</option></select>
+        <select id="hCat" aria-label="Filter by category"><option value="">All categories</option><option value="Red">Red</option><option value="Yellow">Yellow</option><option value="Green">Green</option><option value="diff" id="hCatDiffOpt">≠ Differs from colour count</option></select>
         <select id="hSort" aria-label="Sort"><option value="low">Lowest overview first</option><option value="high">Highest overview first</option><option value="name">Name</option></select>
         <button class="btn" type="button" id="hCsv" hidden>Download CSV</button>
         <label class="btn hImportLbl" for="hFile">Import Harrison results…</label>
@@ -1055,10 +1062,10 @@
     <fieldset>
       <legend>Forms &amp; initiative</legend>
       <div class="fields">
-        <div class="field"><label for="fQ2">Forms Q2</label><select id="fQ2"><option>Verified</option><option>Pending</option></select></div>
-        <div class="field"><label for="fQ3">Forms Q3</label><select id="fQ3"><option>Verified</option><option>Pending</option></select></div>
-        <div class="field"><label for="fQ4">Forms Q4</label><select id="fQ4"><option>Verified</option><option>Pending</option></select></div>
-        <div class="field"><label for="fInit">Initiative status</label><select id="fInit"><option>In Progress</option><option>Completed</option><option>Not Started</option></select></div>
+        <div class="field"><label for="fQ2">Forms Q2</label><select id="fQ2"><option value="Verified">Verified</option><option value="Pending">Pending</option></select></div>
+        <div class="field"><label for="fQ3">Forms Q3</label><select id="fQ3"><option value="Verified">Verified</option><option value="Pending">Pending</option></select></div>
+        <div class="field"><label for="fQ4">Forms Q4</label><select id="fQ4"><option value="Verified">Verified</option><option value="Pending">Pending</option></select></div>
+        <div class="field"><label for="fInit">Initiative status</label><select id="fInit"><option value="In Progress">In Progress</option><option value="Completed">Completed</option><option value="Not Started">Not Started</option></select></div>
       </div>
     </fieldset>
     <fieldset>
@@ -1098,11 +1105,14 @@
 
 <script>
   const $ = id => document.getElementById(id);
+  let lang = 'en';   // 'en' | 'ms'
+  try { if (localStorage.getItem('etp-lang') === 'ms') lang = 'ms'; } catch (_) {}
+  const LOC = () => lang === 'ms' ? 'ms-MY' : 'en-GB';
   const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const pct = (a, b) => b ? a / b : 0;
-  const fmtPct = v => (Math.round(v * 1000) / 10).toLocaleString('en-GB', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%';
-  const fmtDate = s => s ? new Date(s + (s.length === 10 ? 'T00:00:00' : '')).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
+  const fmtPct = v => (Math.round(v * 1000) / 10).toLocaleString(LOC(), { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%';
+  const fmtDate = s => s ? new Date(s + (s.length === 10 ? 'T00:00:00' : '')).toLocaleDateString(LOC(), { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
   const tick = v => v ? '<span class="tick y" aria-label="Yes">✓</span>' : '<span class="tick n" aria-label="No">✗</span>';
 
   /* ---------- Peraturan KPI (ikut Master List ETP) ---------- */
@@ -1229,7 +1239,7 @@
     // Siri
     const s = [1, 2, 3, 4, 5].map(k => talents.filter(t => Number(t.series) === k).length);
     s.push(n - s.reduce((a, b) => a + b, 0));
-    if (seriesChart) { seriesChart.data.datasets[0].data = s; seriesChart.update(); }
+    if (seriesChart) { seriesChart.data.labels = ['Series 1', 'Series 2', 'Series 3', 'Series 4', 'Series 5', 'Not attended'].map(tr); seriesChart.data.datasets[0].label = tr('Participants'); seriesChart.data.datasets[0].data = s; seriesChart.update(); }
 
     // Pembentangan terkini
     const pres = talents.filter(t => t.presentationDate).sort((a, b) => b.presentationDate.localeCompare(a.presentationDate)).slice(0, 8);
@@ -2007,7 +2017,22 @@
     return pdfReady || (pdfReady = PDF_LIBS.reduce((p, src) => p.then(() => loadScript(src)), Promise.resolve()).catch(e => { pdfReady = null; throw e; }));
   }
   // The standard PDF font covers Latin-1 only, so map symbols the portal uses
-  const pdfText = v => String(v ?? '').replace(/≥/g, '>=').replace(/≤/g, '<=').replace(/[–—]/g, '-').replace(/·/g, '|').replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/✓/g, 'Yes').replace(/✗/g, 'No').replace(/[^\x00-\xFF]/g, '');
+  const pdfClean = v => String(v ?? '').replace(/≥/g, '>=').replace(/≤/g, '<=').replace(/[–—]/g, '-').replace(/·/g, '|').replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/✓/g, 'Yes').replace(/✗/g, 'No').replace(/[^\x00-\xFF]/g, '');
+  // In Malay mode the text is translated first (from the original, then from the cleaned form), then cleaned for the Latin-1 PDF font
+  const pdfText = v => {
+    const raw = String(v ?? ''), out = pdfClean(raw);
+    if (lang !== 'ms') return out;
+    for (const s of [raw, out]) { const k = s.replace(/\s+/g, ' ').trim(); const r = k ? trLookup(k) : null; if (r !== null) return pdfClean(r); }
+    return out;
+  };
+  // Direct doc.text() calls and table cells with literal text also follow the language
+  function pdfLang(doc) {
+    if (lang !== 'ms') return doc;
+    const t0 = doc.text.bind(doc), a0 = doc.autoTable.bind(doc);
+    doc.text = (txt, ...a) => t0(Array.isArray(txt) ? txt.map(pdfText) : typeof txt === 'string' ? pdfText(txt) : txt, ...a);
+    doc.autoTable = o => { const p0 = o.didParseCell; return a0({ ...o, didParseCell: d => { if (p0) p0(d); d.cell.text = d.cell.text.map(pdfText); } }); };
+    return doc;
+  }
 
   async function exportPdf(btn) {
     if (!talents.length) { toast('Load the talent data first'); return; }
@@ -2023,14 +2048,14 @@
 
   function buildPdf() {
     const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const doc = pdfLang(new jsPDF({ unit: 'mm', format: 'a4' }));
     const W = 210, M = 14, CW = W - 2 * M;
     const C = { green: [13, 102, 54], mid: [74, 148, 55], logo: [82, 222, 86], tint: [227, 243, 218], ink: [42, 43, 46], muted: [106, 107, 109], line: [230, 230, 230], bad: [198, 40, 40], warn: [148, 88, 0], ok: [13, 102, 54] };
     const n = talents.length, tpg = talents.filter(isTpg).length, ready = talents.filter(isReady).length;
     const tpgV = pct(tpg, n), r = rating(tpgV), readyV = pct(ready, n);
     const t4 = talents.filter(t => talentRating(t) >= 4).length;
     const need4 = Math.max(0, Math.ceil(.65 * n - 1e-9) - tpg);
-    const today = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+    const today = new Date().toLocaleDateString(LOC(), { day: 'numeric', month: 'long', year: 'numeric' });
     const P = s => pdfText(s);
     const ratingColor = v => v >= 4 ? C.ok : v === 3 ? C.warn : C.bad;
 
@@ -2170,6 +2195,167 @@
     return doc.output('blob');
   }
 
+  /* ---------- PowerPoint management summary ---------- */
+  const PPT_LIB = 'https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js';
+  let pptReady = null;
+  function loadPpt() {
+    if (window.PptxGenJS) return Promise.resolve();
+    return pptReady || (pptReady = new Promise((ok, fail) => {
+      const s = document.createElement('script'); s.src = PPT_LIB; s.onload = ok;
+      s.onerror = () => fail(new Error('Could not load the PowerPoint library. Check your internet connection.')); document.head.appendChild(s);
+    }).catch(e => { pptReady = null; throw e; }));
+  }
+
+  async function exportPptx(btn) {
+    if (!talents.length) { toast('Load the talent data first'); return; }
+    const label = btn.textContent; btn.disabled = true; btn.textContent = 'Preparing PowerPoint…';
+    try {
+      await loadPpt();
+      const blob = await buildPptx();
+      await saveBlob(`ETP-2026-management-summary-${new Date().toISOString().slice(0, 10)}.pptx`, blob);
+    } catch (e) { toast(e && e.message ? e.message : 'PowerPoint could not be created'); }
+    finally { btn.disabled = false; btn.textContent = label; }
+  }
+  document.querySelectorAll('.pptBtn').forEach(b => b.addEventListener('click', () => exportPptx(b)));
+
+  async function buildPptx() {
+    const T = s => { s = String(s ?? ''); if (lang !== 'ms') return s; const r = trLookup(s.replace(/\s+/g, ' ').trim()); return r === null ? s : r; };
+    const C = { green: '0D6636', mid: '4A9437', logo: '52DE56', tint: 'E3F3DA', ink: '2A2B2E', muted: '6A6B6D', line: 'E6E6E6', bad: 'C62828', warn: '945800' };
+    const FONT = 'Calibri';
+    const n = talents.length, tpg = talents.filter(isTpg).length, ready = talents.filter(isReady).length;
+    const tpgV = pct(tpg, n), r = rating(tpgV), readyV = pct(ready, n);
+    const t4 = talents.filter(t => talentRating(t) >= 4).length;
+    const need4 = Math.max(0, Math.ceil(.65 * n - 1e-9) - tpg);
+    const today = new Date().toLocaleDateString(LOC(), { day: 'numeric', month: 'long', year: 'numeric' });
+    const ratingColor = v => v >= 4 ? C.green : v === 3 ? C.warn : C.bad;
+    const acts = allActions();
+    const cnt = k => acts.filter(a => a.key === k).length;
+    const owners = {};
+    acts.filter(a => a.role === 'HOD' && a.key === 'hod').forEach(a => { const k = titleCase(a.owner) || 'Not recorded'; owners[k] = (owners[k] || 0) + 1; });
+    const topHod = Object.entries(owners).sort((a, b) => b[1] - a[1]).slice(0, 2);
+    const points = [
+      `TPG Index is ${fmtPct(tpgV)} (rating ${r}). ${need4 ? `${need4} more talent must complete 2 Core + 1 Stretch to reach rating 4 (65%).` : 'The rating 4 target is met.'}`,
+      `${ready} of ${n} talent (${fmtPct(readyV)}) have completed TDP and at least 1 Stretch, and are waiting only for Kirkpatrick L3.`,
+      `Kirkpatrick L3 is the main blocker: ${cnt('sv')} SV Forms, ${cnt('pres')} presentations and ${cnt('hod')} HOD Form endorsements are still open.`,
+      topHod.length ? `Largest HOD endorsement queues: ${topHod.map(([k, v]) => `${k} (${v})`).join(', ')}.` : ''
+    ].filter(Boolean);
+
+    const pptx = new PptxGenJS();
+    pptx.layout = 'LAYOUT_WIDE'; // 13.33 x 7.5 in
+    pptx.title = 'ETP Portal | ' + T('Management Summary');
+    pptx.defineSlideMaster({
+      title: 'ETP', background: { color: 'FFFFFF' },
+      objects: [
+        { rect: { x: 0, y: 0, w: 13.33, h: 0.12, fill: { color: C.logo } } },
+        { line: { x: 0.5, y: 7.0, w: 12.33, h: 0, line: { color: C.line, width: 0.75 } } },
+        { text: { text: `ETP Portal | ${T('Management Summary')} | ${today}`, options: { x: 0.5, y: 7.05, w: 9, h: 0.3, fontFace: FONT, fontSize: 10, color: C.muted } } }
+      ],
+      slideNumber: { x: 12.0, y: 7.05, w: 0.83, h: 0.3, fontFace: FONT, fontSize: 10, color: C.muted, align: 'right' }
+    });
+    const slide = title => {
+      const s = pptx.addSlide({ masterName: 'ETP' });
+      s.addText(T(title), { x: 0.5, y: 0.3, w: 12.33, h: 0.7, fontFace: FONT, fontSize: 26, bold: true, color: C.ink });
+      return s;
+    };
+    const hcell = (txt, align) => ({ text: T(txt), options: { bold: true, color: 'FFFFFF', fill: { color: C.green }, align: align || 'left' } });
+    const tbl = (s, rows, o) => s.addTable(rows, { fontFace: FONT, fontSize: 12, color: C.ink, border: { type: 'solid', pt: 0.5, color: C.line }, valign: 'middle', margin: [0.04, 0.1, 0.04, 0.1], ...o });
+
+    // 1. Title
+    let s = pptx.addSlide();
+    s.background = { color: C.green };
+    s.addShape(pptx.ShapeType.rect, { x: 0, y: 0, w: 13.33, h: 0.2, fill: { color: C.logo }, line: { color: C.logo } });
+    s.addText('EMERGING TALENT PROGRAM (ETP) 2026', { x: 0.8, y: 2.1, w: 11.7, h: 0.5, fontFace: FONT, fontSize: 18, bold: true, color: C.logo, charSpacing: 2 });
+    s.addText(T('Management Summary'), { x: 0.8, y: 2.7, w: 11.7, h: 1.2, fontFace: FONT, fontSize: 48, bold: true, color: 'FFFFFF' });
+    s.addText(T(`KPI 10 Talent Pool Growth (TPG) Index | ${n} talent | generated ${today}`), { x: 0.8, y: 4.0, w: 11.7, h: 0.5, fontFace: FONT, fontSize: 16, color: 'E3F3DA' });
+
+    // 2. Key figures and key points
+    s = slide('Key points');
+    const tiles = [
+      ['TOTAL TALENT', String(n), 'identified in ETP 2026', C.green],
+      ['OFFICIAL TPG INDEX', fmtPct(tpgV), `rating ${r} of 5 | ${tpg} achieved`, ratingColor(r)],
+      ['READINESS', fmtPct(readyV), `${ready} awaiting Kirkpatrick L3 only`, readyV >= .8 ? C.green : C.warn],
+      ['TALENT AT TARGET', `${t4} / ${n}`, 'talent KPI rating 4 or 5', t4 / n >= .8 ? C.green : C.bad]
+    ];
+    const tw = (12.33 - 3 * 0.25) / 4;
+    tiles.forEach(([lab, val, note, c], i) => {
+      const x = 0.5 + i * (tw + 0.25);
+      s.addShape(pptx.ShapeType.rect, { x, y: 1.2, w: tw, h: 1.6, fill: { color: 'FFFFFF' }, line: { color: C.line, width: 0.75 } });
+      s.addShape(pptx.ShapeType.rect, { x, y: 1.2, w: 0.08, h: 1.6, fill: { color: c }, line: { color: c } });
+      s.addText(T(lab), { x: x + 0.2, y: 1.28, w: tw - 0.3, h: 0.3, fontFace: FONT, fontSize: 11, bold: true, color: C.muted });
+      s.addText(val, { x: x + 0.2, y: 1.58, w: tw - 0.3, h: 0.7, fontFace: FONT, fontSize: 30, bold: true, color: C.ink });
+      s.addText(T(note), { x: x + 0.2, y: 2.3, w: tw - 0.3, h: 0.4, fontFace: FONT, fontSize: 11, color: C.muted });
+    });
+    s.addShape(pptx.ShapeType.rect, { x: 0.5, y: 3.1, w: 12.33, h: 3.6, fill: { color: C.tint }, line: { color: C.tint } });
+    s.addText(points.map(p => ({ text: T(p), options: { bullet: { code: '25CF' }, breakLine: true, paraSpaceAfter: 10 } })),
+      { x: 0.7, y: 3.2, w: 11.9, h: 3.4, fontFace: FONT, fontSize: 16, color: C.ink, valign: 'top' });
+
+    // 3. Kirkpatrick L3 chain
+    s = slide('Kirkpatrick L3 verification chain');
+    const steps = [['1. AIL attendance (Core 1)', talents.filter(t => t.idpAttendance).length], ['2. SV Form submitted', talents.filter(t => t.l3Sv).length],
+      ['3. Presentation completed', talents.filter(t => t.l3Presentation).length], ['4. HOD Form endorsed (final)', talents.filter(t => t.l3Hod).length]];
+    s.addChart(pptx.charts.BAR, [{ name: T('Talent'), labels: steps.map(x => T(x[0])), values: steps.map(x => x[1]) }], {
+      x: 0.5, y: 1.2, w: 12.33, h: 4.2, barDir: 'bar', chartColors: [C.green], catAxisOrientation: 'maxMin', valAxisMinVal: 0, valAxisMaxVal: n,
+      valAxisHidden: true, valGridLine: { style: 'none' }, showValue: true, dataLabelFontSize: 14, dataLabelFontFace: FONT, dataLabelColor: C.ink,
+      catAxisLabelFontSize: 14, catAxisLabelFontFace: FONT, catAxisLabelColor: C.ink, barGapWidthPct: 60, showLegend: false
+    });
+    s.addText(T(`${talents.filter(t => t.l3Presentation && !t.l3Hod).length} talent have presented but have no HOD Form yet. This is the main blocker for the TPG Index.`),
+      { x: 0.5, y: 5.6, w: 12.33, h: 0.8, fontFace: FONT, fontSize: 16, color: C.ink, fill: { color: C.tint }, margin: 12 });
+
+    // 4. Indicators
+    s = slide('Core & Stretch indicator achievement');
+    const ind = [['Status forms (Q2): Verified', talents.filter(verified).length], ['Core 1: TDP Milestone (AIL attendance)', talents.filter(t => t.idpAttendance).length],
+      ['Core 2 L3: SV Form', talents.filter(t => t.l3Sv).length], ['Core 2 L3: Presentation', talents.filter(t => t.l3Presentation).length],
+      ['Core 2 L3: HOD Form (final)', talents.filter(t => t.l3Hod).length], ['Stretch 1: Process Improvement', talents.filter(t => t.stretch1).length],
+      ['Stretch 2: Stretch Role / Extra-Mile', talents.filter(t => t.stretch2).length]];
+    tbl(s, [[hcell('Indicator'), hcell('Completed', 'right'), hcell('%', 'right'), hcell('Status')],
+      ...ind.map(([l, c]) => { const b = band(pct(c, n))[0]; return [{ text: T(l) }, { text: String(c), options: { align: 'right' } }, { text: fmtPct(pct(c, n)), options: { align: 'right' } },
+        { text: T(b), options: { bold: true, color: b === 'Good' ? C.green : b === 'Moderate' ? C.warn : C.bad } }]; })],
+      { x: 0.5, y: 1.2, w: 12.33, colW: [6.5, 1.8, 1.8, 2.23], rowH: 0.5 });
+
+    // 5. Department KPI (paged)
+    const m = new Map();
+    talents.forEach(t => { const u = unitOf(t); const o = m.get(u) || { total: 0, tpg: 0, ready: 0 }; o.total++; if (isTpg(t)) o.tpg++; if (isReady(t)) o.ready++; m.set(u, o); });
+    const deptRows = [...m.entries()].sort((a, b) => b[1].total - a[1].total || a[0].localeCompare(b[0])).map(([u, o]) => {
+      const v = pct(o.tpg, o.total); return [titleCase(u), o.total, o.tpg, fmtPct(v), rating(v), Math.max(0, Math.ceil(.65 * o.total - 1e-9) - o.tpg), fmtPct(pct(o.ready, o.total))];
+    });
+    deptRows.push(['Corporate', n, tpg, fmtPct(tpgV), r, need4, fmtPct(readyV)]);
+    const PER = 11, pages = Math.ceil(deptRows.length / PER);
+    for (let p = 0; p < pages; p++) {
+      s = slide('Department KPI: TPG Index by department / division');
+      if (pages > 1) s.addText(`${p + 1} / ${pages}`, { x: 11.3, y: 0.4, w: 1.53, h: 0.4, fontFace: FONT, fontSize: 12, color: C.muted, align: 'right' });
+      const rows = deptRows.slice(p * PER, (p + 1) * PER);
+      tbl(s, [[hcell('Department / division'), hcell('Talent', 'right'), hcell('Achieved', 'right'), hcell('TPG Index', 'right'), hcell('Rating', 'center'), hcell('More for rating 4', 'right'), hcell('Readiness', 'right')],
+        ...rows.map(row => { const corp = row[0] === 'Corporate'; const o = { bold: corp, fill: corp ? { color: C.tint } : undefined };
+          return [{ text: T(row[0]), options: { ...o } }, { text: String(row[1]), options: { ...o, align: 'right' } }, { text: String(row[2]), options: { ...o, align: 'right' } },
+            { text: row[3], options: { ...o, align: 'right' } }, { text: String(row[4]), options: { ...o, bold: true, align: 'center', color: ratingColor(row[4]) } },
+            { text: String(row[5]), options: { ...o, align: 'right' } }, { text: row[6], options: { ...o, align: 'right' } }]; })],
+        { x: 0.5, y: 1.2, w: 12.33, colW: [4.9, 1.1, 1.3, 1.4, 1.1, 1.5, 1.03], rowH: 0.43, fontSize: 11 });
+    }
+
+    // 6. Talent KPI rating and pending actions
+    s = slide('Talent KPI rating');
+    const scale = { 5: 'Both Core + both Stretch', 4: '2 Core + 1 Stretch (target)', 3: '2 Core only', 2: 'Only 1 Core', 1: 'No Core indicator' };
+    tbl(s, [[hcell('Rating', 'center'), hcell('Definition'), hcell('Talent', 'right')],
+      ...[5, 4, 3, 2, 1].map(k => [{ text: String(k), options: { bold: true, align: 'center', color: ratingColor(k) } }, { text: T(scale[k]) }, { text: String(talents.filter(t => talentRating(t) === k).length), options: { align: 'right' } }])],
+      { x: 0.5, y: 1.2, w: 6.0, colW: [1.0, 3.9, 1.1], rowH: 0.5, fontSize: 12 });
+    s.addText(T('Pending actions'), { x: 6.83, y: 1.2, w: 6.0, h: 0.4, fontFace: FONT, fontSize: 16, bold: true, color: C.ink });
+    tbl(s, [[hcell('Action'), hcell('Owner'), hcell('Open', 'right')],
+      ...ACTIONS.map(a => [{ text: T(a.title) }, { text: T(a.role) }, { text: String(cnt(a.key)), options: { align: 'right' } }])],
+      { x: 6.83, y: 1.65, w: 6.0, colW: [3.5, 1.5, 1.0], rowH: 0.5, fontSize: 12 });
+
+    // 7. Follow-up
+    s = slide('Follow-up: supervisors and HODs with the most open actions');
+    const by = new Map();
+    acts.forEach(a => { if (a.role === 'Talent') return; const name = a.role === 'GHCD' ? 'GHCD' : (titleCase(a.owner) || 'Not recorded'); const k = a.role + '|' + name;
+      if (!by.has(k)) by.set(k, { name, role: a.role, items: [] }); by.get(k).items.push(a); });
+    const top = [...by.values()].sort((a, b) => b.items.length - a.items.length || a.name.localeCompare(b.name)).slice(0, 10);
+    tbl(s, [[hcell('Person'), hcell('Role'), hcell('Open actions', 'right'), hcell('Actions')],
+      ...top.map(o => [{ text: T(o.name) }, { text: T(o.role) }, { text: String(o.items.length), options: { align: 'right' } }, { text: [...new Set(o.items.map(a => T(a.title)))].join(', ') }])],
+      { x: 0.5, y: 1.2, w: 12.33, colW: [3.6, 1.5, 1.4, 5.83], rowH: 0.45, fontSize: 12 });
+
+    return await pptx.write({ outputType: 'blob' });
+  }
+
   /* ---------- Harrison PDF report ---------- */
   async function exportHarrisonPdf() {
     if (!talents.some(hasH)) { toast('Import the Harrison results first'); return; }
@@ -2185,7 +2371,7 @@
 
   function buildHarrisonPdf(withTalents) {
     const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const doc = pdfLang(new jsPDF({ unit: 'mm', format: 'a4' }));
     const W = 210, M = 14, CW = W - 2 * M;
     const C = { green: [13, 102, 54], mid: [74, 148, 55], logo: [82, 222, 86], tint: [227, 243, 218], ink: [42, 43, 46], muted: [106, 107, 109], line: [230, 230, 230], bad: [198, 40, 40], warn: [148, 88, 0], ok: [13, 102, 54] };
     const BG = { g: [227, 243, 218], y: [253, 240, 220], r: [251, 228, 228] }, FG = { g: C.ok, y: C.warn, r: C.bad };
@@ -2194,7 +2380,7 @@
     const a = avg(all, 'hOverview');
     const cats = ['Red', 'Yellow', 'Green'].map(c => ({ c, n: all.filter(t => t.hCat === c).length }));
     const avgs = COMPS.map(c => ({ ...c, v: avg(all, c.k) })).sort((x, y) => x.v - y.v);
-    const today = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+    const today = new Date().toLocaleDateString(LOC(), { day: 'numeric', month: 'long', year: 'numeric' });
     const head = { fillColor: C.green, textColor: 255, fontStyle: 'bold', fontSize: 8 };
     const body = { fontSize: 8.5, textColor: C.ink, cellPadding: 1.2, lineColor: C.line, lineWidth: 0.1 };
     const title = (txt, y, sz = 11) => { doc.setFont('helvetica', 'bold'); doc.setFontSize(sz); doc.setTextColor(...C.ink); doc.text(P(txt), M, y); };
@@ -2317,7 +2503,7 @@
           } });
       };
       const legend = yy => { doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(...C.muted);
-        doc.text(doc.splitTextToSize(P('Ovw = Emerging Leader Overview (green >= 75, yellow 60-74, red < 60). ' + COMPS.map(c => `${c.short} ${c.name}`).join(' | ') + '. Competency scores out of 10: green >= 7.5, yellow 6.0-7.4, red < 6.0.' + (all.some(catDiff) ? ' * Category from the HCC slides differs from the colour count of the 10 competencies (5 or more in one colour, Red then Yellow then Green); the slide category is shown.' : '')), CW), M, yy); };
+        doc.text(doc.splitTextToSize(P('Ovw = Emerging Leader Overview (green >= 75, yellow 60-74, red < 60).') + ' ' + COMPS.map(c => `${c.short} ${c.name}`).join(' | ') + P('. Competency scores out of 10: green >= 7.5, yellow 6.0-7.4, red < 6.0.') + (all.some(catDiff) ? ' ' + P('* Category from the HCC slides differs from the colour count of the 10 competencies (5 or more in one colour, Red then Yellow then Green); the slide category is shown.') : ''), CW), M, yy); };
 
       doc.addPage(); y = 14;
       const reds = all.filter(t => t.hCat === 'Red').sort((x, z) => x.hOverview - z.hOverview);
@@ -2373,7 +2559,7 @@
     });
     renderList();
     downloads = await window.claude.use('downloads');
-    $('csvBtn').hidden = !downloads; $('actCsvBtn').hidden = !downloads; document.querySelectorAll('.pdfBtn').forEach(b => { b.hidden = !downloads; }); $('hPdfBtn').hidden = !downloads;
+    $('csvBtn').hidden = !downloads; $('actCsvBtn').hidden = !downloads; document.querySelectorAll('.pdfBtn, .pptBtn').forEach(b => { b.hidden = !downloads; }); $('hPdfBtn').hidden = !downloads;
   }
 
   /* ---------- Mod fail tempatan (GitHub Pages / fail disimpan) ----------
@@ -2394,7 +2580,7 @@
     const has = local && Object.keys(local.talents).length;
     $('localTitle').textContent = has ? `${Object.keys(local.talents).length} talent loaded from ${local.fileName}` : 'Load the ETP Master List';
     $('localNote').textContent = has
-      ? `Loaded on ${new Date(local.loadedAt).toLocaleString('en-GB')}. Data and edits are stored in this browser only. Use "Download CSV" on the Talent tab to keep your changes.`
+      ? `Loaded on ${new Date(local.loadedAt).toLocaleString(LOC())}. Data and edits are stored in this browser only. Use "Download CSV" on the Talent tab to keep your changes.`
       : 'Choose the ETP Master List Excel file (.xlsx) or a CSV downloaded from this portal. The file is read in your browser only. It is not uploaded or sent anywhere.';
     $('fileLabel').textContent = has ? 'Load another file…' : 'Choose file…';
     $('fileLabel').classList.toggle('primary', !has);
@@ -2403,7 +2589,7 @@
 
   function enterLocalMode() {
     mode = 'local'; canWrite = true; downloads = null;
-    $('addBtn').hidden = false; $('csvBtn').hidden = false; $('actCsvBtn').hidden = false; document.querySelectorAll('.pdfBtn').forEach(b => { b.hidden = false; }); $('hPdfBtn').hidden = false;
+    $('addBtn').hidden = false; $('csvBtn').hidden = false; $('actCsvBtn').hidden = false; document.querySelectorAll('.pdfBtn, .pptBtn').forEach(b => { b.hidden = false; }); $('hPdfBtn').hidden = false;
     store = {
       update: async (id, d) => { local.talents[id] = { ...local.talents[id], ...d }; persistLocal(); },
       create: async (id, d) => { if (!local) local = { fileName: 'portal', loadedAt: Date.now(), talents: {} }; local.talents[id] = d; persistLocal(); },
@@ -2542,7 +2728,207 @@
     yes.onclick = () => { row.remove(); local = null; lsWrite(null); persistLocal(); toast('Data removed from this browser'); };
   });
 
+  /* ---------- Language engine (EN source, BM overlay) ----------
+     The page is written in English. In BM mode every text node, mixed-markup element and
+     placeholder/title/aria-label is looked up in MS (exact text) or PAT (patterns for strings with numbers). */
+  /* I18N:BEGIN */
+  const MS = {"Not attended": "Tidak hadir", "Participants": "Peserta", "ETP Portal": "Portal ETP", "Language": "Bahasa", "Portal sections": "Bahagian portal", "Overview": "Gambaran Keseluruhan", "Summary": "Ringkasan", "KPI Status": "Status KPI", "Pending Actions": "Tindakan Tertunggak", "Talent": "Talent", "Load the ETP Master List": "Muatkan Master List ETP", "Choose the ETP Master List Excel file (.xlsx) or a CSV downloaded from this portal. The file is read in your browser only. It is not uploaded or sent anywhere.": "Pilih fail Excel Master List ETP (.xlsx) atau CSV yang dimuat turun daripada portal ini. Fail dibaca dalam pelayar anda sahaja. Ia tidak dimuat naik atau dihantar ke mana-mana.", "Choose file…": "Pilih fail…", "Clear data": "Kosongkan data", "Personal Growth & Competency": "Pertumbuhan Peribadi & Kompetensi", "“You are part of TH’s future talent.” ETP strengthens future leadership and supports TH’s long-term sustainability.": "“ANDA adalah sebahagian daripada BAKAT masa depan TH.” ETP memperkukuh kepimpinan masa depan dan menyokong kelestarian jangka panjang TH.", "Programme goal": "Matlamat program", "Build talent ready for future roles and strengthen leadership succession.": "Membina bakat yang bersedia memikul peranan masa depan dan memperkukuh pelan penggantian kepimpinan.", "What ETP is": "Apa itu ETP", "Structured journey to build leadership readiness and behaviour": "Perjalanan berstruktur untuk membina kesiapsiagaan dan tingkah laku kepimpinan", "What ETP is not": "Apa bukan ETP", "<b class=\"big\">No guarantee</b>Not an automatic promotion, qualification or entitlement": "<b class=\"big\">Tiada jaminan</b>Bukan kenaikan pangkat, kelayakan atau hak secara automatik", "Commitment": "Komitmen", "<b class=\"big\">Continuous effort</b>A development opportunity that needs ongoing commitment": "<b class=\"big\">Usaha berterusan</b>Peluang pembangunan yang memerlukan komitmen berterusan", "Current stage: Supervisor monitoring (PPP)": "Peringkat semasa: Pemantauan oleh Penyelia (PPP)", "Programme timeline": "Garis masa program", "TODAY": "HARI INI", "Potential identification": "Pengenalpastian potensi", "Harrison assessment": "Penilaian Harrison", "Learning progress": "Kemajuan pembelajaran", "AIL development training": "Latihan pembangunan AIL", "Supervisor monitoring (PPP)": "Pemantauan oleh Penyelia (PPP)", "Apply learning, behaviour change": "Aplikasi pembelajaran, perubahan tingkah laku", "On-the-job training": "Latihan di tempat kerja", "Real work assignments": "Tugasan kerja sebenar", "Readiness evaluation": "Penilaian kesediaan", "Leadership readiness": "Kesediaan kepimpinan", "Outcome": "Hasil", "Ready for critical roles": "Bersedia untuk peranan kritikal", "How talent are selected": "Bagaimana talent dipilih", "Nominated by management": "Dicalonkan oleh pengurusan", "Bachelor’s degree": "Ijazah sarjana muda", "Assessed for potential": "Dinilai untuk potensi", "Developed & measured": "Dibangunkan & diukur", "Talent Development Plan (TDP)": "Pelan Pembangunan Talent (TDP)", "behaviour change": "perubahan tingkah laku", "Process improvement": "Penambahbaikan proses", "Stretch role / extra-mile": "Peranan Stretch / sumbangan melebihi jangkaan", "What will be developed": "Apa yang akan dibangunkan", "Lead Self": "Memimpin Diri (Lead Self)", "Self-awareness, resilience and continuous learning.": "Kesedaran diri, ketahanan dan pembelajaran berterusan.", "Lead Others": "Memimpin Orang Lain (Lead Others)", "Communication, influence and building strong teams.": "Komunikasi, pengaruh dan membina pasukan yang kukuh.", "Lead Organisation": "Memimpin Organisasi (Lead Organisation)", "Strategic thinking, creative problem solving and innovation for TH.": "Pemikiran strategik, penyelesaian masalah secara kreatif dan inovasi untuk TH.", "How we engage talent": "Bagaimana kami melibatkan talent", "Check-ins": "Pemeriksaan berkala", "Regular check-ins and reflection on progress.": "Pemeriksaan dan refleksi berkala tentang kemajuan.", "Collaboration": "Kerjasama", "TDP discussions with the supervisor, aligned to TH needs and career goals.": "Perbincangan TDP bersama penyelia, selaras dengan keperluan TH dan aspirasi kerjaya.", "Progress": "Kemajuan", "Stretch assignments and peer learning in practice.": "Tugasan Stretch dan pembelajaran bersama rakan sepejabat melalui amalan.", "KPI target for each talent": "Sasaran KPI bagi setiap talent", "TDP Milestone": "TDP Milestone", "AIL programme attended": "Program AIL dihadiri", "SV Form · presentation · HOD Form": "SV Form · pembentangan · HOD Form", "Process improvement or stretch role": "Penambahbaikan proses atau peranan stretch", "validated by supervisor & HOD": "disahkan oleh penyelia & HOD", "Target": "Sasaran", "counts towards the TPG Index": "dikira dalam TPG Index", "No Core": "Tiada Core", "What is expected of talent": "Apa yang diharapkan daripada talent", "Own and drive your <b>Talent Development Plan (TDP)</b>": "Miliki dan pacu <b>Pelan Pembangunan Talent (TDP)</b> anda", "<b>Apply learning</b> in daily work for real impact": "<b>Aplikasikan pembelajaran</b> dalam kerja harian untuk impak yang nyata", "Benefits for talent": "Manfaat untuk talent", "<b>Self-awareness</b>: know your strengths and potential as a future leader": "<b>Kesedaran diri</b>: kenali kekuatan dan potensi anda sebagai pemimpin masa depan", "<b>Exposure &amp; confidence</b> through real challenges and structured learning": "<b>Pendedahan &amp; keyakinan diri</b> melalui cabaran sebenar dan pembelajaran berstruktur", "<b>Ready for future roles</b>: critical and leadership positions in TH": "<b>Bersedia untuk peranan masa depan</b>: jawatan kritikal dan kepimpinan di TH", "“This is a beginning, not an end.”": "“Ini Permulaan, bukan Penamat.”", "Download PDF summary": "Muat turun ringkasan PDF", "Total talent": "Jumlah talent", "Official TPG Index": "TPG Index rasmi", "Overall rating": "Rating keseluruhan", "Core & Stretch indicator achievement": "Pencapaian penunjuk Core & Stretch", "Indicator": "Penunjuk", "Completed": "Selesai", "Needs action": "Perlu tindakan", "TPG Index by department / division": "TPG Index mengikut jabatan / bahagian", "Department / division": "Jabatan / bahagian", "Achieved & verified": "Capai & disahkan", "AIL programme attendance by series": "Kehadiran program AIL mengikut siri", "Date": "Tarikh", "Presented": "Dibentang", "No presentation dates recorded.": "Tiada tarikh pembentangan direkodkan.", "Department · Corporate target": "Jabatan · Sasaran korporat", "Talent · Personal Growth & Competency Development": "Talent · Pembangunan Pertumbuhan Peribadi & Kompetensi", "Talent KPI": "KPI Talent", "Both Core + both Stretch": "Kedua-dua Core + kedua-dua Stretch", "No Core indicator": "Tiada penunjuk Core", "Department KPI": "KPI Jabatan", "Achieved": "Capai", "Reference: rating scales and indicator definitions": "Rujukan: skala rating dan definisi penunjuk", "Department: TPG Index": "Jabatan: TPG Index", "Talent: Personal Growth & Competency Development": "Talent: Pembangunan Pertumbuhan Peribadi & Kompetensi", "Both Core + both Stretch indicators": "Kedua-dua Core + kedua-dua penunjuk Stretch", "No evidence of growth or extra-mile contribution": "Tiada bukti pertumbuhan atau sumbangan melebihi jangkaan", "Core (mandatory)": "Core (wajib)", "<b>Core i: TDP Milestone Completion.</b> Attending the HC development programme (AIL Development Program). Validated by the immediate supervisor and Head of Department/Division; programme provided and verified by GHCD.": "<b>Core i: Penyiapan TDP Milestone.</b> Menghadiri program pembangunan HC (AIL Development Program). Disahkan oleh penyelia terus dan Ketua Jabatan/Bahagian; program disediakan dan disahkan oleh GHCD.", "Stretch i: Productivity / Process Improvement": "Stretch i: Peningkatan Produktiviti / Penambahbaikan Proses", "Stretch ii: Stretch Role / Extra-Mile": "Stretch ii: Peranan Stretch / Sumbangan Melebihi Jangkaan", "Pending actions": "Tindakan tertunggak", "Owner: HOD": "Pemilik: HOD", "Owner: GHCD": "Pemilik: GHCD", "Owner: Supervisor": "Pemilik: Penyelia", "Owner: Talent": "Pemilik: Talent", "Complete a Stretch initiative": "Lengkapkan inisiatif Stretch", "Search talent, staff no., supervisor, HOD": "Cari talent, no. staf, penyelia, HOD", "Search pending actions": "Cari tindakan tertunggak", "Filter by action": "Tapis mengikut tindakan", "All actions": "Semua tindakan", "Filter by owner": "Tapis mengikut pemilik", "All owners": "Semua pemilik", "Supervisor": "Penyelia", "Filter by department or division": "Tapis mengikut jabatan atau bahagian", "All departments / divisions": "Semua jabatan / bahagian", "Sort": "Susun", "Most urgent first": "Paling mendesak dahulu", "Department": "Jabatan", "Talent name": "Nama talent", "Download CSV": "Muat turun CSV", "Pending action": "Tindakan tertunggak", "Owner": "Pemilik", "Timing": "Masa", "No data yet": "Belum ada data", "Load the talent data to see pending actions.": "Muatkan data talent untuk melihat tindakan tertunggak.", "Follow-up by person": "Susulan mengikut individu", "Who to contact, and how many open actions each person holds. Matches the filters above.": "Siapa yang perlu dihubungi, dan berapa tindakan terbuka dipegang oleh setiap orang. Mengikut penapis di atas.", "Person": "Individu", "Role": "Peranan", "Open actions": "Tindakan terbuka", "No open actions.": "Tiada tindakan terbuka.", "Include individual scores (Red list and full heatmap)": "Sertakan skor individu (senarai Red dan peta haba penuh)", "Download PDF report": "Muat turun laporan PDF", "Assessed": "Dinilai", "Average overview score": "Purata skor Overview", "Red category": "Kategori Red", "committee decision required": "keputusan jawatankuasa diperlukan", "Weakest competency": "Kompetensi paling lemah", "Indicator category": "Kategori penunjuk", "No Harrison results loaded yet.": "Belum ada keputusan Harrison dimuatkan.", "Competency averages": "Purata kompetensi", "Competency heatmap": "Peta haba kompetensi", "Search talent or staff no.": "Cari talent atau no. staf", "Search Harrison results": "Cari keputusan Harrison", "Filter by category": "Tapis mengikut kategori", "All categories": "Semua kategori", "Lowest overview first": "Overview terendah dahulu", "Highest overview first": "Overview tertinggi dahulu", "Name": "Nama", "Import Harrison results…": "Import keputusan Harrison…", "Category": "Kategori", "Load the talent data first.": "Muatkan data talent dahulu.", "Department comparison": "Perbandingan jabatan", "Avg overview": "Purata overview", "Download rating template": "Muat turun templat penarafan", "Import ratings…": "Import penarafan…", "Potential": "Potensi", "High potential, low performance. Find the blocker: role fit, coaching, clear goals.": "Potensi tinggi, prestasi rendah. Cari puncanya: kesesuaian peranan, bimbingan, matlamat yang jelas.", "High potential, moderate performance. Stretch assignments and mentoring.": "Potensi tinggi, prestasi sederhana. Tugasan stretch dan mentoring.", "Growth talent": "Talent berkembang", "Top talent. Accelerate: critical roles and succession slates.": "Talent teratas. Percepatkan: peranan kritikal dan senarai penggantian.", "Future leader": "Pemimpin masa depan", "Moderate potential, low performance. Performance plan and support.": "Potensi sederhana, prestasi rendah. Pelan prestasi dan sokongan.", "Inconsistent player": "Pemain tidak konsisten", "Solid contributor. Build depth in the current role.": "Penyumbang mantap. Bina kedalaman dalam peranan semasa.", "Core player": "Pemain teras", "Strong results. Broaden experience to grow potential.": "Hasil yang kukuh. Luaskan pengalaman untuk menambah potensi.", "High performer": "Berprestasi tinggi", "Low performance and potential. Address performance or role fit.": "Prestasi dan potensi rendah. Tangani prestasi atau kesesuaian peranan.", "Risk": "Berisiko", "Reliable in the current role. Keep engaged.": "Boleh diharap dalam peranan semasa. Kekalkan penglibatan.", "Effective contributor": "Penyumbang berkesan", "High performance, lower potential. Recognise and retain expertise.": "Prestasi tinggi, potensi lebih rendah. Iktiraf dan kekalkan kepakaran.", "Trusted professional": "Profesional dipercayai", "High": "Tinggi", "Moderate": "Sederhana", "Low": "Rendah", "Performance": "Prestasi", "Click a row to open the talent profile.": "Klik baris untuk membuka profil talent.", "Box": "Kotak", "How to add performance and potential ratings": "Cara menambah penarafan prestasi dan potensi", "Rating scale": "Skala rating", "<b>Performance</b>: latest annual performance rating. <b>Potential</b>: e.g. from the Harrison leadership assessment or calibration panel.": "<b>Prestasi</b>: penarafan prestasi tahunan terkini. <b>Potensi</b>: contohnya daripada penilaian kepimpinan Harrison atau panel kalibrasi.", "Three ways to add ratings": "Tiga cara menambah penarafan", "Download the rating template, fill the PERFORMANCE and POTENTIAL columns, then use <b>Import ratings</b>.": "Muat turun templat penarafan, isi lajur PERFORMANCE dan POTENTIAL, kemudian guna <b>Import penarafan</b>.", "Or add PERFORMANCE and POTENTIAL columns to the Master List.": "Atau tambah lajur PERFORMANCE dan POTENTIAL dalam Master List.", "Or open a talent profile, choose <b>Edit talent</b> and set the two ratings.": "Atau buka profil talent, pilih <b>Sunting talent</b> dan tetapkan kedua-dua penarafan.", "Edit talent": "Sunting talent", "‹ Back": "‹ Kembali", "Previous talent": "Talent sebelumnya", "‹ Prev": "‹ Sebelum", "Next talent": "Talent seterusnya", "Next ›": "Seterusnya ›", "Growth indicators": "Penunjuk pertumbuhan", "Harrison Assessment": "Penilaian Harrison", "ETP journey": "Perjalanan ETP", "Staff details": "Maklumat staf", "Reporting line": "Barisan pelaporan", "Same supervisor": "Penyelia yang sama", "Search name, staff no., title, supervisor": "Cari nama, no. staf, jawatan, penyelia", "Search talent": "Cari talent", "Filter by series": "Tapis mengikut siri", "All series": "Semua siri", "Filter by stage": "Tapis mengikut tahap", "All stages": "Semua tahap", "TPG achieved": "Capai TPG", "Not ready": "Belum sedia", "+ Add talent": "+ Tambah talent", "Grade": "Gred", "Series": "Siri", "Pres.": "Bentang", "Stage": "Tahap", "Connecting to the database…": "Menyambung ke pangkalan data…", "The talent list will appear here.": "Senarai talent akan dipaparkan di sini.", "Add talent": "Tambah talent", "Staff no. *": "No. staf *", "Name *": "Nama *", "Title": "Jawatan", "Department *": "Jabatan *", "Division": "Bahagian", "Email": "Emel", "Gender": "Jantina", "Female": "Perempuan", "Male": "Lelaki", "Immediate supervisor": "Penyelia terus", "Head of division": "Ketua bahagian", "Head of department": "Ketua jabatan", "Forms & initiative": "Borang & inisiatif", "Initiative status": "Status inisiatif", "In Progress": "Dalam proses", "Not Started": "Belum bermula", "Core & Stretch indicators": "Penunjuk Core & Stretch", "AIL series": "Siri AIL", "Presentation date": "Tarikh pembentangan", "Not rated": "Belum dinilai", "Cancel": "Batal", "Save": "Simpan", "No talent yet": "Belum ada talent", "Add the first talent or ask Claude to import the ETP Master List.": "Tambah talent pertama atau minta Claude mengimport Master List ETP.", "talent in the pool": "talent dalam kumpulan", "departments / divisions": "jabatan / bahagian", "AIL series held": "siri AIL diadakan", "Good": "Baik", "Total": "Jumlah", "Yes": "Ya", "Corporate": "Korporat", "No Stretch indicator yet": "Belum ada penunjuk Stretch", "Moderate <span class=\"sub\">(H)</span>": "Sederhana <span class=\"sub\">(H)</span>", "High <span class=\"sub\">(H)</span>": "Tinggi <span class=\"sub\">(H)</span>", "Low <span class=\"sub\">(H)</span>": "Rendah <span class=\"sub\">(H)</span>", "No matching actions": "Tiada tindakan sepadan", "Try another keyword or clear the filters.": "Cuba kata kunci lain atau kosongkan penapis.", "No matching talent": "Tiada talent sepadan", "TDP Milestone Completion": "Penyiapan TDP Milestone", "✓ HOD Form endorsed": "✓ HOD Form disahkan", "Process Improvement": "Penambahbaikan Proses", "✓ Completed": "✓ Selesai", "Stretch Role / Extra-Mile": "Peranan Stretch / Sumbangan Melebihi Jangkaan", "No pending actions. This talent has met the KPI target.": "Tiada tindakan tertunggak. Talent ini telah mencapai sasaran KPI.", "Awareness & potential identification": "Kesedaran & pengenalpastian potensi", "AIL development programme (Core i)": "Program pembangunan AIL (Core i)", "Submitted by supervisor": "Dihantar oleh penyelia", "Endorsed": "Disahkan", "Stretch indicators": "Penunjuk Stretch", "Leadership readiness evaluation": "Penilaian kesediaan kepimpinan", "Staff no.": "No. staf", "Copy": "Salin", "Initiative": "Inisiatif", "<i class=\"rd-k-avg\"></i>Group average": "<i class=\"rd-k-avg\"></i>Purata kumpulan", "Strengths": "Kekuatan", "Development areas": "Bidang pembangunan", "✗ SV Form not submitted": "✗ SV Form belum dihantar", "No date recorded": "Tiada tarikh direkodkan", "✗ Not completed": "✗ Belum selesai", "No other talent under this supervisor.": "Tiada talent lain di bawah penyelia ini.", "✗ Awaiting HOD Form": "✗ Menunggu HOD Form", "Delete": "Padam", "Delete this talent?": "Padam talent ini?", "Yes, delete": "Ya, padam", "Preparing PDF…": "Menyediakan PDF…", "Choose the ETP Master List file at the top to show the talent list.": "Pilih fail Master List ETP di bahagian atas untuk memaparkan senarai talent.", "Import the Harrison results first": "Import keputusan Harrison dahulu", "Reading file…": "Membaca fail…", "Load another file…": "Muat fail lain…", "No Harrison results yet": "Belum ada keputusan Harrison", "Use “Import Harrison results” with the Harrison results file (CSV or Excel with STAFF NO and the competency columns).": "Guna “Import keputusan Harrison” dengan fail keputusan Harrison (CSV atau Excel dengan STAFF NO dan lajur kompetensi).", "No performance and potential ratings yet": "Belum ada penarafan prestasi dan potensi", "Download the rating template, fill it in and import it, or rate talent one by one from their profile.": "Muat turun templat penarafan, isi dan import, atau nilai talent satu demi satu daripada profil mereka.", "Remove all data from this browser?": "Buang semua data daripada pelayar ini?", "Yes, remove": "Ya, buang", "Harrison": "Harrison", "Emerging Leaders": "Emerging Leaders", "Communication": "Communication", "Impact & Influence": "Impact & Influence", "Energizing People": "Energizing People", "Leading People": "Leading People", "Innovation": "Innovation", "Strategic Thinking": "Strategic Thinking", "Problem Solving": "Problem Solving", "Resilience & Perseverance": "Resilience & Perseverance", "Learning Agility": "Learning Agility", "Achievement Orientation": "Achievement Orientation", "Core i": "Core i", "Core ii": "Core ii", "Readiness": "Readiness", "Status": "Status", "TPG Index": "TPG Index", "Rating": "Rating", "HOD": "HOD", "GHCD": "GHCD", "IHSAN": "IHSAN", "Red": "Red", "Yellow": "Yellow", "Green": "Green", "Emerging Leader Overview": "Emerging Leader Overview", "ETP KPI": "ETP KPI", "TDP": "TDP", "KPI": "KPI", "Verified": "Verified", "Pending": "Pending", "Stretch i": "Stretch i", "Stretch ii": "Stretch ii", "Download PowerPoint": "Muat turun PowerPoint", "Preparing PowerPoint…": "Menyediakan PowerPoint…", "Not recorded": "Tidak direkodkan", "Open": "Terbuka", "Added via portal": "Ditambah melalui portal", "Could not load the PDF library. Check your internet connection.": "Pustaka PDF tidak dapat dimuatkan. Semak sambungan internet anda.", "Could not load the Excel reader. Check your internet connection.": "Pembaca Excel tidak dapat dimuatkan. Semak sambungan internet anda.", "Could not load the PowerPoint library. Check your internet connection.": "Pustaka PowerPoint tidak dapat dimuatkan. Semak sambungan internet anda.", "Download failed": "Muat turun tidak berjaya", "PDF could not be created": "PDF tidak dapat dicipta", "PowerPoint could not be created": "PowerPoint tidak dapat dicipta", "Talent added": "Talent ditambah", "Talent deleted": "Talent dipadam", "Changes saved": "Perubahan disimpan", "Changes will only last until this page is closed": "Perubahan hanya kekal sehingga halaman ini ditutup", "Email copied": "Emel disalin", "Email selected. Copy it with your keyboard or menu.": "Emel dipilih. Salin menggunakan papan kekunci atau menu.", "Data removed from this browser": "Data dibuang daripada pelayar ini", "Load the talent data first": "Muatkan data talent dahulu", "You have view-only access. Ask the portal owner for edit access.": "Anda hanya ada akses lihat. Minta pemilik portal beri akses sunting.", "data is not loaded yet": "data belum dimuatkan", "unknown error": "ralat tidak diketahui", "No sheet has STAFF NO with PERFORMANCE or POTENTIAL columns.": "Tiada sheet yang mempunyai STAFF NO dengan lajur PERFORMANCE atau POTENTIAL.", "No sheet has STAFF NO with the Harrison competency columns.": "Tiada sheet yang mempunyai STAFF NO dengan lajur kompetensi Harrison.", "No talent rows were found in this file.": "Tiada baris talent dijumpai dalam fail ini.", "The STAFF NO or STAFF NAME column was not found.": "Lajur STAFF NO atau STAFF NAME tidak dijumpai.", "This file has no sheet with a STAFF NO column and ETP indicators (for example the \"Status Indicator\" sheet).": "Fail ini tiada sheet dengan lajur STAFF NO dan penunjuk ETP (contohnya sheet \"Status Indicator\").", "No AIL series recorded": "Tiada siri AIL direkodkan", "After AIL attendance": "Selepas kehadiran AIL", "Presented, awaiting endorsement": "Telah membentang, menunggu pengesahan", "Presentation not completed": "Pembentangan belum selesai", "Awaiting HOD Form": "Menunggu HOD Form", "AIL programme not attended": "Program AIL tidak dihadiri", "AIL not attended": "AIL tidak dihadiri", "9-Box: not rated": "9-Box: belum dinilai", "Status forms (Q2): Verified": "Borang status (Q2): Verified", "committee decision on tailored development": "keputusan jawatankuasa tentang pembangunan khusus", "targeted development": "pembangunan bersasar", "on track": "di landasan", "Rating 4 target met": "Sasaran rating 4 dicapai", "Sasaran rating 4 dicapai": "Sasaran rating 4 dicapai", "Verify Q2 status form": "Sahkan borang status Q2", "Slide": "Slaid", "Talent in the pool": "Talent dalam kumpulan", "Management Summary": "Ringkasan Pengurusan", "EMERGING TALENT PROGRAM (ETP) 2026": "EMERGING TALENT PROGRAM (ETP) 2026", "TOTAL TALENT": "JUMLAH TALENT", "OFFICIAL TPG INDEX": "TPG INDEX RASMI", "READINESS": "READINESS", "TALENT AT TARGET": "TALENT PADA SASARAN", "Key points": "Perkara utama", "Department KPI: TPG Index by department / division": "KPI Jabatan: TPG Index mengikut jabatan / bahagian", "More for rating 4": "Lagi untuk rating 4", "Talent KPI rating": "Rating KPI talent", "Definition": "Definisi", "2 Core + 1 Stretch (target)": "2 Core + 1 Stretch (sasaran)", "2 Core only": "2 Core sahaja", "Only 1 Core": "Hanya 1 Core", "Action": "Tindakan", "Follow-up: supervisors and HODs with the most open actions": "Susulan: penyelia dan HOD dengan tindakan terbuka paling banyak", "Actions": "Tindakan", "Harrison Assessment Report": "Laporan Penilaian Harrison", "AVERAGE OVERVIEW": "PURATA OVERVIEW", "RED CATEGORY": "KATEGORI RED", "WEAKEST COMPETENCY": "KOMPETENSI PALING LEMAH", "ASSESSED": "DINILAI", "Competency averages (lowest first)": "Purata kompetensi (terendah dahulu)", "Department / division comparison": "Perbandingan jabatan / bahagian", "Competency groups (FAITH and IHSAN)": "Kumpulan kompetensi (FAITH dan IHSAN)", "Group": "Kumpulan", "Competencies": "Kompetensi", "Average": "Purata", "Competency scores by category": "Skor kompetensi mengikut kategori", "Competency": "Kompetensi", "All": "Semua", "F: Forward-Looking": "F: Forward-Looking", "A: Agile": "A: Agile", "I: Inspirational": "I: Inspirational", "T: Trustworthy": "T: Trustworthy", "H: High Performance": "H: High Performance", "IHSAN: Ihsan Leadership": "IHSAN: Ihsan Leadership", "Staff": "Staf", "Cat.": "Kat.", "Ovw": "Ovw", "#": "#", "Dashed lines: 6.0 and 7.5 (Red below 6.0, Yellow 6.0-7.4, Green 7.5 and above).": "Garis putus-putus: 6.0 dan 7.5 (Red di bawah 6.0, Yellow 6.0-7.4, Green 7.5 dan ke atas).", "Category = 50% or more of a talent\\'s indicators are red, yellow or green (as classified in the HCC deck).": "Kategori = 50% atau lebih penunjuk talent berwarna merah, kuning atau hijau (seperti dikelaskan dalam slaid HCC).", "Category = 50% or more of a talent's indicators are red, yellow or green (as classified in the HCC deck).": "Kategori = 50% atau lebih penunjuk talent berwarna merah, kuning atau hijau (seperti dikelaskan dalam slaid HCC).", "Talent with 50% or more red indicators. The committee decides whether they remain in the programme or follow a tailored multi-competency development plan.": "Talent dengan 50% atau lebih penunjuk merah. Jawatankuasa memutuskan sama ada mereka kekal dalam program atau mengikuti pelan pembangunan khusus pelbagai kompetensi.", "Ovw = Emerging Leader Overview (green >= 75, yellow 60-74, red < 60).": "Ovw = Emerging Leader Overview (hijau >= 75, kuning 60-74, merah < 60).", ". Competency scores out of 10: green >= 7.5, yellow 6.0-7.4, red < 6.0.": ". Skor kompetensi daripada 10: hijau >= 7.5, kuning 6.0-7.4, merah < 6.0.", "* Category from the HCC slides differs from the colour count of the 10 competencies (5 or more in one colour, Red then Yellow then Green); the slide category is shown.": "* Kategori daripada slaid HCC berbeza daripada kiraan warna 10 kompetensi (5 atau lebih dalam satu warna, Red kemudian Yellow kemudian Green); kategori slaid dipaparkan.", "Awaiting L3": "Menunggu L3", "CATEGORY BY COLOUR COUNT": "CATEGORY BY COLOUR COUNT", "talent with Harrison results": "talent dengan keputusan Harrison"};
+  const MSN = {"Series #": "Siri #", "#-Box": "#-Box", "Emerging Talent Program (ETP) #": "Emerging Talent Program (ETP) #", "<b class=\"big\">#–# months</b>Structured journey to build leadership readiness and behaviour": "<b class=\"big\">#–# bulan</b>Perjalanan berstruktur untuk membina kesiapsiagaan dan tingkah laku kepimpinan", "Programme journey · Oct # – Dec #": "Perjalanan program · Okt # – Dis #", "Stage #": "Peringkat #", "Oct #": "Okt #", "Jan #": "Jan #", "Jul #": "Jul #", "Oct # · # mo": "Okt # · # bln", "Jun # · # mo": "Jun # · # bln", "Oct – Dec # · # mo": "Okt – Dis # · # bln", "Jan # · # mo": "Jan # · # bln", "<b>Withdrawn if</b> performance is not <i>excellent</i> for # consecutive years, or the talent faces disciplinary action or proceedings.": "<b>Digugurkan jika</b> prestasi tidak mencapai tahap <i>cemerlang</i> selama # tahun berturut-turut, atau talent dikenakan tindakan atau prosiding tatatertib.", "Permanent or contract<br><small>min. # year of service</small>": "Tetap atau kontrak<br><small>minimum # tahun tempoh perkhidmatan</small>", "Aged # and below": "Berumur # tahun dan ke bawah", "Excellent rating<br><small># consecutive years</small>": "Penilaian cemerlang<br><small># tahun berturut-turut</small>", "Clean record<br><small>no disciplinary action, # years</small>": "Rekod bersih<br><small>tiada tindakan tatatertib, # tahun</small>", "# Harrison Leadership Competencies": "# Kompetensi Kepimpinan Harrison", "Kirkpatrick Level #<br><small>behaviour change</small>": "Kirkpatrick Tahap #<br><small>perubahan tingkah laku</small>", "Kirkpatrick Level #": "Kirkpatrick Tahap #", "Kirkpatrick L#": "Kirkpatrick L#", "≥ # Stretch": "≥ # Stretch", "Rating #": "Rating #", "# Core": "# Core", "# Core + # Stretch": "# Core + # Stretch", "Based on the KPI revision, September #. Progress against this target is on the KPI Status tab.": "Berdasarkan semakan KPI, September #. Kemajuan terhadap sasaran ini terdapat dalam tab Status KPI.", "Reach <b>rating #</b>: both Core + at least # Stretch": "Capai <b>rating #</b>: kedua-dua Core + sekurang-kurangnya # Stretch", "“This is a beginning, not an end.”<span>ETP introduction session, # May #, TH Talent Hub</span>": "“Ini Permulaan, bukan Penamat.”<span>Sesi Pengenalan ETP, # Mei #, TH Talent Hub</span>", "Management summary of the current data, as a #-page A# PDF.": "Ringkasan pengurusan bagi data semasa, dalam PDF #-halaman A#.", "identified in ETP #": "dikenal pasti dalam ETP #", "# of # talent achieved & verified": "# daripada # talent capai & disahkan", "# talent awaiting Kirkpatrick L# only": "# talent hanya menunggu Kirkpatrick L#", "Kirkpatrick L# verification chain": "Rantaian pengesahan Kirkpatrick L#", "#. AIL attendance (Core #)": "#. Kehadiran AIL (Core #)", "#. SV Form submitted": "#. SV Form dihantar", "#. Presentation completed": "#. Pembentangan selesai", "#. HOD Form endorsed (final)": "#. HOD Form disahkan (akhir)", "Status forms (Q#): Verified": "Borang status (Q#): Verified", "Core #: TDP Milestone (AIL attendance)": "Core #: TDP Milestone (kehadiran AIL)", "Core # L#: SV Form": "Core # L#: SV Form", "Core # L#: Presentation": "Core # L#: Pembentangan", "Core # L#: HOD Form (final)": "Core # L#: HOD Form (akhir)", "Stretch #: Process Improvement": "Stretch #: Penambahbaikan Proses", "Stretch #: Stretch Role / Extra-Mile": "Stretch #: Peranan Stretch / Sumbangan Melebihi Jangkaan", "TPG Index = talent who achieved <b>both Core indicators</b> (TDP Milestone + Kirkpatrick L#: SV Form, Presentation, HOD Form) <b>and ≥# Stretch indicator</b>, with Verified status ÷ total talent. Readiness is a supplementary metric (not an official rating): Verified talent who have completed TDP and ≥# Stretch and are awaiting only the L# assessment. Pejabat PUK/KPE is broken down by division.": "TPG Index = talent yang mencapai <b>kedua-dua penunjuk Core</b> (TDP Milestone + Kirkpatrick L#: SV Form, Pembentangan, HOD Form) <b>dan ≥# penunjuk Stretch</b>, berstatus Verified ÷ jumlah talent. Readiness ialah metrik tambahan (bukan rating rasmi): talent Verified yang telah menyelesaikan TDP dan ≥# Stretch dan hanya menunggu penilaian L#. Pejabat PUK/KPE dipecahkan mengikut bahagian.", "Latest L# presentations": "Pembentangan L# terkini", "Talent meeting target (rating ≥#)": "Talent mencapai sasaran (rating ≥#)", "KPI # · Learning & Growth (#%) · Optimize Human Capital · #% weightage at each level. Target group: grades TH# to TH# (Emerging Talent). Indicators are calculated from the Talent tab data.": "KPI # · Learning & Growth (#%) · Optimize Human Capital · wajaran #% bagi setiap peringkat. Kumpulan sasaran: gred TH# hingga TH# (Emerging Talent). Penunjuk dikira daripada data tab Talent.", "Number of growth indicators achieved by each talent (out of #: Core i, Core ii, Stretch i, Stretch ii). The target is rating #: both Core indicators and at least # Stretch indicator.": "Bilangan penunjuk pertumbuhan yang dicapai setiap talent (daripada #: Core i, Core ii, Stretch i, Stretch ii). Sasaran ialah rating #: kedua-dua penunjuk Core dan sekurang-kurangnya # penunjuk Stretch.", "# Core + # Stretch (target)": "# Core + # Stretch (sasaran)", "# Core only": "# Core sahaja", "Only # Core": "Hanya # Core", "TPG Index = talent who achieved # Core + ≥# Stretch (Verified status) ÷ total talent in the department. The target columns show how many more talent must complete to move up a rating.": "TPG Index = talent yang mencapai # Core + ≥# Stretch (berstatus Verified) ÷ jumlah talent dalam jabatan. Lajur sasaran menunjukkan berapa lagi talent perlu melengkapkan untuk naik rating.", "More for rating #": "Lagi untuk rating #", "≥ #% TPG Index": "≥ #% TPG Index", "< #% TPG Index": "< #% TPG Index", "The KPI document states rating # as < #%. The portal follows the Master List bands (< #%) so that #–#% is not left without a rating.": "Dokumen KPI menyatakan rating # sebagai < #%. Portal mengikut jalur Master List (< #%) supaya julat #–#% tidak ketinggalan tanpa rating.", "# Core indicators only": "# penunjuk Core sahaja", "Only # Core indicator": "Hanya # penunjuk Core", "<b>Core ii: Kirkpatrick Level #, Behavioural Shift.</b> Assesses behaviour before and after training. Supported by documentary evidence and validated by HCD. In this portal, Core ii counts as complete once the HOD Form is endorsed.": "<b>Core ii: Kirkpatrick Tahap #, Perubahan Tingkah Laku.</b> Menilai tingkah laku sebelum dan selepas latihan. Disokong bukti dokumen dan disahkan oleh HCD. Dalam portal ini, Core ii dikira lengkap apabila HOD Form disahkan.", "≥ # initiative completed, validated through documented deliverables and endorsed by the HOD. Examples: workflow enhancement, quality improvement, digital/systems optimisation, cost reduction, documentation & standardisation (SOPs, guidelines), service delivery enhancement.": "≥ # inisiatif disiapkan, disahkan melalui hasil kerja berdokumen dan disokong oleh HOD. Contoh: penambahbaikan aliran kerja, peningkatan kualiti, pengoptimuman digital/sistem, pengurangan kos, dokumentasi & penyeragaman (SOP, garis panduan), penambahbaikan penyampaian perkhidmatan.", "≥ # initiative completed, validated through documented deliverables and endorsed by the HOD. Examples: a higher role than the normal scope, cross-department involvement, special projects, voluntary initiatives outside working hours, extra initiatives that add value to TH.": "≥ # inisiatif disiapkan, disahkan melalui hasil kerja berdokumen dan disokong oleh HOD. Contoh: peranan lebih tinggi daripada skop biasa, penglibatan rentas jabatan, projek khas, inisiatif sukarela di luar waktu kerja, inisiatif tambahan yang memberi nilai kepada TH.", "Every step still open for each talent to reach the KPI target (rating #) and count towards the TPG Index. Click a card to filter the list, and click a row to open the talent profile.": "Setiap langkah yang masih terbuka bagi setiap talent untuk mencapai sasaran KPI (rating #) dan dikira dalam TPG Index. Klik kad untuk menapis senarai, dan klik baris untuk membuka profil talent.", "Verify Q# status form": "Sahkan borang status Q#", "Attend AIL programme (Core #)": "Hadiri program AIL (Core #)", "Submit SV Form (L#)": "Hantar SV Form (L#)", "Complete L# presentation": "Lengkapkan pembentangan L#", "Endorse HOD Form (L#)": "Sahkan HOD Form (L#)", "Kirkpatrick L# is assessed #–# days after AIL training. The L# due date is the end of the talent’s AIL series plus # days.": "Kirkpatrick L# dinilai #–# hari selepas latihan AIL. Tarikh akhir L# ialah tarikh tamat siri AIL talent ditambah # hari.", "Harrison Assessment, Dec #": "Harrison Assessment, Dis #", "Emerging Leader Overview, out of #": "Emerging Leader Overview, daripada #", "Talent grouped by whether #% or more of their indicators are red, yellow or green. Click a segment to filter the heatmap.": "Talent dikumpulkan mengikut sama ada #% atau lebih penunjuk mereka berwarna merah, kuning atau hijau. Klik segmen untuk menapis peta haba.", "Lowest first. Green ≥ # · Yellow #–# · Red < #": "Terendah dahulu. Hijau ≥ # · Kuning #–# · Merah < #", "Scores out of # (overview out of #). Click a row to open the talent profile.": "Skor daripada # (overview daripada #). Klik baris untuk membuka profil talent.", "≠ Differs from colour count (#)": "≠ Berbeza daripada kiraan warna (#)", "<span class=\"cdiff\">≠</span> <b id=\"hDiffN\">#</b> talent whose slide category differs from the colour count (# or more of the # competencies in one colour, checked Red, then Yellow, then Green). The category from the HCC slides is kept. Hover or tap the ≠ for the counts, or use the category filter.": "<span class=\"cdiff\">≠</span> <b id=\"hDiffN\">#</b> talent yang kategori slaidnya berbeza daripada kiraan warna (# atau lebih daripada # kompetensi dalam satu warna, disemak Red, kemudian Yellow, kemudian Green). Kategori daripada slaid HCC dikekalkan. Tuding atau ketik ≠ untuk melihat kiraan, atau guna penapis kategori.", "Groups: F Forward-Looking · A Agile · I Inspirational · T Trustworthy · H High Performance · IHSAN Ihsan Leadership. Overview colours: green ≥ #, yellow #–#, red &lt; #. The overview score also sets <b>potential</b> on the #-Box tab.": "Kumpulan: F Forward-Looking · A Agile · I Inspirational · T Trustworthy · H High Performance · IHSAN Ihsan Leadership. Warna overview: hijau ≥ #, kuning #–#, merah &lt; #. Skor overview juga menetapkan <b>potensi</b> pada tab #-Box.", "#-Box talent grid": "Grid talent #-Box", "Places each talent by <b>performance</b> (horizontal) and <b>potential</b> (vertical). Potential comes from the Harrison overview score (≥ # High, #–# Moderate, &lt; # Low) unless set manually. Use it to calibrate the talent pool and plan development and succession. Click a box to list the talent in it.": "Meletakkan setiap talent mengikut <b>prestasi</b> (mendatar) dan <b>potensi</b> (menegak). Potensi datang daripada skor overview Harrison (≥ # Tinggi, #–# Sederhana, &lt; # Rendah) kecuali ditetapkan secara manual. Guna untuk mengkalibrasi kumpulan talent dan merancang pembangunan serta penggantian. Klik kotak untuk menyenaraikan talent di dalamnya.", "Rated talent (#)": "Talent dinilai (#)", "Each uses # levels: <b>Low</b>, <b>Moderate</b>, <b>High</b> (or #, #, #). A #-point performance scale is also accepted: #–# = Low, # = Moderate, #–# = High.": "Setiap satu guna # tahap: <b>Low</b>, <b>Moderate</b>, <b>High</b> (atau #, #, #). Skala prestasi #-mata juga diterima: #–# = Low, # = Moderate, #–# = High.", "Awaiting L# only": "Menunggu L# sahaja", "L#: no SV Form yet": "L#: belum ada SV Form", "L#: not presented yet": "L#: belum membentang", "L#: no HOD Form yet": "L#: belum ada HOD Form", "Forms Q# Verified": "Borang Q# Verified", "Stretch #: Stretch Role": "Stretch #: Peranan Stretch", "Core #: TDP Attendance": "Core #: Kehadiran TDP", "Core # L#: HOD Form": "Core # L#: HOD Form", "Talent KPI rating (#-#)": "Rating KPI talent (#-#)", "Q# = Forms Q# Verified · S#/S# = Stretch #/# · TDP = Core # AIL attendance · SV, Pres., HOD = Core # Kirkpatrick L#. Click a row to open the talent profile.": "Q# = Borang Q# Verified · S#/S# = Stretch #/# · TDP = kehadiran AIL Core # · SV, Bentang, HOD = Core # Kirkpatrick L#. Klik baris untuk membuka profil talent.", "Forms Q#": "Borang Q#", "Core #: TDP attendance (AIL)": "Core #: kehadiran TDP (AIL)", "#-Box assessment": "Penilaian #-Box", "# talent have presented but have no HOD Form yet. This is the main blocker for the TPG Index.": "# talent telah membentang tetapi belum ada HOD Form. Ini halangan utama kepada TPG Index.", "# more talent needed for rating # (≥#%)": "# lagi talent diperlukan untuk rating # (≥#%)", "#% of talent at rating # or #": "#% talent pada rating # atau #", "# open actions across # talent": "# tindakan terbuka merentas # talent", "# of # actions": "# daripada # tindakan", "Waiting # days since presentation": "Menunggu # hari sejak pembentangan", "# of # talent": "# daripada # talent", "Awaiting L#": "Menunggu L#", "Q# Verified": "Q# Verified", "AIL Series #": "AIL Siri #", "#-Box: not rated": "#-Box: belum dinilai", "# of # indicators · target met": "# daripada # penunjuk · sasaran dicapai", "✓ Attended AIL Series #": "✓ Menghadiri AIL Siri #", "Oct # · Harrison assessment": "Okt # · Penilaian Harrison", "Q# status form": "Borang status Q#", "Kirkpatrick L#: SV Form": "Kirkpatrick L#: SV Form", "Kirkpatrick L#: Presentation": "Kirkpatrick L#: Pembentangan", "Kirkpatrick L#: HOD Form": "Kirkpatrick L#: HOD Form", "# of # completed": "# daripada # selesai", "Forms Q# / Q#": "Borang Q# / Q#", "Jan # · # months": "Jan # · # bulan", "Same supervisor (#)": "Penyelia yang sama (#)", "# of # indicators · target is rating #": "# daripada # penunjuk · sasaran ialah rating #", "Talent KPI: rating #": "KPI talent: rating #", "#/# indicators": "#/# penunjuk", "# talent loaded": "# talent dimuatkan", "Q# Pending": "Q# Pending", "rating # of # | # achieved": "rating # daripada # | # capai", "# awaiting Kirkpatrick L# only": "# menunggu Kirkpatrick L# sahaja", "talent KPI rating # or #": "rating KPI talent # atau #", "average # of #": "purata # daripada #", "The rating # target is met.": "Sasaran rating # dicapai.", "# more talent must complete # Core + # Stretch to reach rating # (#%).": "# lagi talent perlu melengkapkan # Core + # Stretch untuk mencapai rating # (#%).", "# of # talent (#%) have completed TDP and at least # Stretch, and are waiting only for Kirkpatrick L#.": "# daripada # talent (#%) telah melengkapkan TDP dan sekurang-kurangnya # Stretch, dan hanya menunggu Kirkpatrick L#.", "Kirkpatrick L# is the main blocker: # SV Forms, # presentations and # HOD Form endorsements are still open.": "Kirkpatrick L# ialah halangan utama: # SV Form, # pembentangan dan # pengesahan HOD Form masih terbuka.", "Page # of #": "Halaman # daripada #", "Committee decision list: Red category (#)": "Senarai keputusan jawatankuasa: kategori Red (#)", "Full competency heatmap (# talent, lowest overview first)": "Peta haba kompetensi penuh (# talent, overview terendah dahulu)", "Average Emerging Leader Overview is # out of #. # talent (#%) are in the Green category, # in Yellow and # in Red.": "Purata Emerging Leader Overview ialah # daripada #. # talent (#%) berada dalam kategori Green, # dalam Yellow dan # dalam Red.", "# talent in the Red category need a committee decision: stay in the programme, or follow a tailored multi-competency development plan.": "# talent dalam kategori Red memerlukan keputusan jawatankuasa: kekal dalam program, atau mengikuti pelan pembangunan khusus pelbagai kompetensi.", "#% need committee decision": "#% memerlukan keputusan jawatankuasa", "# / #": "# / #"};
+  const PAT = [
+
+  [/^Current stage: (.+)$/, m => 'Peringkat semasa: ' + L(m[1])],
+  [/^· .+$/, m => m[0]],
+  [/^\d+ <small>\/ \d+<\/small>$/, m => m[0]],
+  [/^[A-Za-z &]+ <span class="sub">[\d.]+<\/span>$/, m => m[0]],
+  [/^(?:Impact and Influence|Resilience and Perseverance|Enigma)$/, m => m[0]],
+  // ---- identity: data-bearing or language-neutral strings
+  [/^Emerging Talent Program \(ETP\) \d+ · KPI \d+ Talent Pool Growth Index(?: <span id="whoami">.*<\/span>)?$/, m => m[0]],
+  [/^(?:KT\d+ · .+|.+ \+\d+)$/, m => m[0]],
+  [/^\d+ [A-Za-z]{3,4} \d{4}$/, m => m[0]],
+  [/^(?:\d+|-|[\d.]+)<small> \/ \d+<\/small>$/, m => m[0]],
+  [/^\d+ <small>[\d.,]+%<\/small>$/, m => m[0]],
+  [/^[A-Za-z &]+ <span class="sub">(?:F|A|I|T|H|IHSAN)<\/span>$/, m => m[0]],
+  [/^[A-Z]{2}<br><span class="sub">(?:F|A|I|T|H|IHSAN)<\/span>$/, m => m[0]],
+  [/^[A-Za-z &]+ \((?:F|A|I|T|H|IHSAN)\)$/, m => m[0]],
+  [/^<i class="rd-k-me"><\/i>.+$/, m => m[0]],
+  [/^Q\d (?:Verified|Pending)$/, m => m[0]],
+  [/^[\d.]+ \/ \d+$|^\d+ \/ \d+$/, m => m[0]],
+  // ---- roles and owners
+  [/^(Supervisor|HOD|Talent|GHCD): (.+)$/, m => ({ Supervisor: 'Penyelia', HOD: 'HOD', Talent: 'Talent', GHCD: 'GHCD' }[m[1]]) + ': ' + m[2]],
+  [/^Status: (.+)$/, m => 'Status: ' + L(m[1])],
+  [/^(Enigma|Growth talent|Future leader|Inconsistent player|Core player|High performer|Risk|Effective contributor|Trusted professional) \((\d+)\)$/, m => L(m[1]) + ' (' + m[2] + ')'],
+  // ---- legend line under the 9-Box list
+  [/^(.+) Click the box again to show everyone\.$/, m => L(m[1]) + ' Klik kotak sekali lagi untuk menunjukkan semua orang.'],
+  // ---- dates and timing
+  [/^L3 due (.+) \((\d+) days\)$/, 'Tarikh akhir L3 $1 ($2 hari)'],
+  [/^L3 overdue by (\d+) days$/, 'L3 lewat $1 hari'],
+  [/^Planned (.+), not recorded$/, 'Dirancang $1, belum direkodkan'],
+  [/^Scheduled (.+)$/, 'Dijadualkan $1'],
+  [/^Presented (.+)$/, 'Dibentang $1'],
+  [/^Window (.+)$/, 'Tetingkap $1'],
+  [/^Series (\d+) · (.+)$/, 'Siri $1 · $2'],
+  [/^Endorsement by (.+)$/, 'Pengesahan oleh $1'],
+  [/^Jan \d+ · \d+ months$/, m => m[0].replace('months', 'bulan')],
+  [/^(Oct|Jan|Jul) (\d{2})$/, m => moMs(m[0])],
+  [/^(\d+) of (\d+) indicators$/, '$1 daripada $2 penunjuk'],
+  [/^target (met|is rating \d+)$/, m => m[1] === 'met' ? 'sasaran dicapai' : 'sasaran ialah ' + m[1].replace('is ', '')],
+  [/^(.+) <small>· rating (\d+)<\/small>$/, m => m[1] + ' <small>· rating ' + m[2] + '</small>'],
+  // ---- profile
+  [/^Potential: (High|Moderate|Low)(?: \(manually set to (High|Moderate|Low)\))? · group avg (.+)$/, m => 'Potensi: ' + L(m[1]) + (m[2] ? ' (ditetapkan secara manual kepada ' + L(m[2]) + ')' : '') + ' · purata kumpulan ' + m[3]],
+  [/^Auto from Harrison: (High|Moderate|Low) \((\d+)\)$/, m => 'Auto daripada Harrison: ' + L(m[1]) + ' (' + m[2] + ')'],
+  [/^([+-]?[\d.]+) vs avg$/, '$1 berbanding purata'],
+  [/^Source: (.+?)(?: · last updated (.+))?$/, m => 'Sumber: ' + L(m[1]) + (m[2] ? ' · dikemas kini terakhir ' + m[2] : '')],
+  [/^(?:Source: (.+) · )?Updated by (.+) on (.+)$/, m => (m[1] ? 'Sumber: ' + L(m[1]) + ' · ' : '') + 'Dikemas kini oleh ' + (m[2] === 'someone' ? 'seseorang' : m[2]) + ' pada ' + m[3]],
+  [/^Slide category (\w+); the colour count gives (\w+) \((\d+) red, (\d+) yellow, (\d+) green\)\. The slide category is kept\.$/, 'Kategori slaid $1; kiraan warna memberi $2 ($3 merah, $4 kuning, $5 hijau). Kategori slaid dikekalkan.'],
+  [/^average ([\d.]+) · next: (.+) ([\d.]+)$/, 'purata $1 · seterusnya: $2 $3'],
+  [/^(\d+) of (\d+) placed · potential (\d+) · performance (\d+)$/, '$1 daripada $2 ditempatkan · potensi $3 · prestasi $4'],
+  [/^<b>(.+?)<\/b> (Red|Yellow|Green): (.+)$/, m => '<b>' + m[1] + '</b> ' + m[2] + ': ' + L(m[3])],
+  [/^<span class="sw (r\d)"><\/span>(.+)$/, m => '<span class="sw ' + m[1] + '"></span>' + L(m[2])],
+  [/^Potential from Harrison: (\d+) High · (\d+) Moderate · (\d+) Low\. Add performance ratings \(download the rating template, fill PERFORMANCE and import it\) to place talent on the grid\.$/, 'Potensi daripada Harrison: $1 Tinggi · $2 Sederhana · $3 Rendah. Tambah penarafan prestasi (muat turun templat penarafan, isi PERFORMANCE dan import) untuk menempatkan talent pada grid.'],
+  [/^<strong>(.+)<\/strong><span>(.+)<\/span>$/, m => '<strong>' + L(m[1]) + '</strong><span>' + L(m[2]) + '</span>'],
+  // ---- blocker sentence on the KPI Status tab
+  [/^<b>(\d+) talent have not met the target\.<\/b> (\d+) of them are missing only <b>Core ii \(Kirkpatrick L3\)<\/b>: the HOD Form is not yet endorsed(?:; (\d+) talent have both Core indicators but no Stretch)?(?:; (\d+) more talent are missing more than one indicator\.|\.) See the Talent tab with the "L3: no HOD Form yet" filter\.$/,
+    m => '<b>' + m[1] + ' talent belum mencapai sasaran.</b> ' + m[2] + ' daripadanya hanya kurang <b>Core ii (Kirkpatrick L3)</b>: HOD Form belum disahkan' +
+      (m[3] ? '; ' + m[3] + ' talent sudah lengkap kedua-dua Core tetapi tiada Stretch' : '') + (m[4] ? '; ' + m[4] + ' lagi talent kurang lebih daripada satu penunjuk.' : '.') + ' Lihat tab Talent dengan penapis "L3: belum ada HOD Form".'],
+  // ---- toasts and errors
+  [/^(\d+) talent rated(?: · (\d+) staff no\. not found)?(?: · (\d+) rows without ratings)?$/, m => m[1] + ' talent dinilai' + (m[2] ? ' · ' + m[2] + ' no. staf tidak dijumpai' : '') + (m[3] ? ' · ' + m[3] + ' baris tanpa penarafan' : '')],
+  [/^(\d+) Harrison results imported(?: · (\d+) staff no\. not found)?$/, m => m[1] + ' keputusan Harrison diimport' + (m[2] ? ' · ' + m[2] + ' no. staf tidak dijumpai' : '')],
+  [/^(\d+) talent loaded from (.+)$/, '$1 talent dimuatkan daripada $2'],
+  [/^Loaded on (.+?)\. Data and edits are stored in this browser only\. Use "Download CSV" on the Talent tab to keep your changes\.$/, 'Dimuatkan pada $1. Data dan suntingan disimpan dalam pelayar ini sahaja. Guna "Muat turun CSV" di tab Talent untuk menyimpan perubahan.'],
+  [/^Could not save: (.+)\. Try again\.$/, m => 'Tidak dapat simpan: ' + L(m[1]) + '. Cuba lagi.'],
+  [/^staff no\. (\S+) already exists$/, 'no. staf $1 sudah wujud'],
+  [/^Could not load the talent list \((.+)\)\. Reload the page to try again\.$/, 'Senarai talent tidak dapat dimuatkan ($1). Muat semula halaman untuk cuba lagi.'],
+  [/^The file could not be read: (.+)$/, m => 'Fail tidak dapat dibaca: ' + L(m[1])],
+  [/^Import failed: (.+)$/, m => 'Import tidak berjaya: ' + L(m[1])],
+  [/^Remove all data from this browser\? <button class="btn danger" type="button">Yes, remove<\/button><button class="btn" type="button">No<\/button>$/, 'Buang semua data daripada pelayar ini? <button class="btn danger" type="button">Ya, buang</button><button class="btn" type="button">Tidak</button>'],
+  [/^Delete this talent\? <button class="btn danger" type="button" id="delYes">Yes, delete<\/button><button class="btn" type="button" id="delNo">No<\/button>$/, 'Padam talent ini? <button class="btn danger" type="button" id="delYes">Ya, padam</button><button class="btn" type="button" id="delNo">Tidak</button>'],
+  // ---- PDF text
+  [/^KPI (\d+) Talent Pool Growth \(TPG\) Index \| (\d+) talent \| generated (.+)$/, 'KPI $1 Talent Pool Growth (TPG) Index | $2 talent | dijana $3'],
+  [/^Emerging Leader competency assessment \| (\d+) talent assessed \| generated (.+)$/, 'Penilaian kompetensi Emerging Leader | $1 talent dinilai | dijana $2'],
+  [/^ETP Portal \| (Management summary|Harrison Assessment report) \| (.+?)( \| CONFIDENTIAL: individual assessment scores)?$/, m => 'Portal ETP | ' + (m[1] === 'Management summary' ? 'Ringkasan pengurusan' : 'Laporan Penilaian Harrison') + ' | ' + m[2] + (m[3] ? ' | SULIT: skor penilaian individu' : '')],
+  [/^TPG Index is ([\d.]+%) \(rating (\d)\)\. (.+)$/, m => 'TPG Index ialah ' + m[1] + ' (rating ' + m[2] + '). ' + L(m[3])],
+  [/^Largest HOD endorsement queues: (.+)\.$/, 'Giliran pengesahan HOD terbesar: $1.'],
+  [/^Lowest competencies: (.+)\. Strongest: (.+)\.$/, 'Kompetensi terendah: $1. Terkuat: $2.'],
+  [/^(\d+) of (\d+) talent \(([\d.]+%)\) score below 6\.0 in at least one competency\. Potential for the 9-Box: (\d+) High, (\d+) Moderate, (\d+) Low\.$/, '$1 daripada $2 talent ($3) skor di bawah 6.0 dalam sekurang-kurangnya satu kompetensi. Potensi untuk 9-Box: $4 Tinggi, $5 Sederhana, $6 Rendah.'],
+  [/^(.+) \(([\d.]+)\)$/, m => (trLookup(m[1]) === null ? m[0] : L(m[1]) + ' (' + m[2] + ')')],
+
+  ];
+  /* I18N:END */
+  const trCache = new Map();
+  window.__trMissing = new Map();
+  const NUMRE = /\d+(?:\.\d+)?/g;
+  // Returns the Malay text, or null when nothing matches. Order: exact, number-masked template, patterns, " · " parts.
+  function trLookup(key) {
+    const d = MS[key]; if (d !== undefined) return d;
+    const nums = key.match(NUMRE);
+    if (nums) {
+      const t = MSN[key.replace(NUMRE, '#')];
+      if (t !== undefined) { let i = 0; return t.replace(/#/g, () => (i < nums.length ? nums[i++] : '#')); }
+    }
+    for (const [re, fn] of PAT) { const m = key.match(re); if (m) return typeof fn === 'string' ? key.replace(re, fn) : fn(m, key); }
+    if (key.includes(' · ')) {
+      const parts = key.split(' · '), t = parts.map(x => trLookup(x));
+      if (t.some(x => x !== null)) return t.map((x, i) => (x === null ? parts[i] : x)).join(' · ');
+    }
+    return null;
+  }
+  const L = x => { const r = trLookup(x); return r === null ? x : r; };
+  const moMs = x => x.replace(/\b(May|Aug|Oct|Dec)\b/g, m => ({ May: 'Mei', Aug: 'Ogo', Oct: 'Okt', Dec: 'Dis' }[m]));
+  function tr(s) {
+    if (lang !== 'ms' || typeof s !== 'string') return s;
+    const key = s.replace(/\s+/g, ' ').trim();
+    if (!key) return s;
+    let out = trCache.get(key);
+    if (out === undefined) {
+      out = trLookup(key);
+      if (out === null) { out = key; if (/[A-Za-z]{3,}/.test(key)) window.__trMissing.set(key, (window.__trMissing.get(key) || 0) + 1); }
+      trCache.set(key, out);
+    }
+    if (out === key) return s;
+    return s.match(/^\s*/)[0] + out + s.match(/\s*$/)[0];
+  }
+
+  const INLINE = new Set(['B', 'I', 'STRONG', 'EM', 'SPAN', 'A', 'SMALL', 'CODE', 'MARK', 'BR', 'U']);
+  const NOTR = new Set(['SCRIPT', 'STYLE', 'TEXTAREA', 'CANVAS', 'NOSCRIPT']);
+  const TR_ATTRS = ['placeholder', 'title', 'aria-label'];
+  const ORIG_N = new WeakMap(), ORIG_E = new WeakMap(), ORIG_A = new WeakMap();
+  const isUnit = el => {
+    let text = false, inl = false;
+    for (const c of el.childNodes) {
+      if (c.nodeType === 3) { if (c.nodeValue.trim()) text = true; }
+      else if (c.nodeType === 1) { if (!INLINE.has(c.tagName)) return false; inl = true; }
+    }
+    return text && inl;
+  };
+  function trAttrs(el) {
+    for (const a of TR_ATTRS) {
+      if (!el.hasAttribute(a)) continue;
+      const cur = el.getAttribute(a); let rec = ORIG_A.get(el); if (!rec) ORIG_A.set(el, rec = {});
+      if (rec[a] && rec[a].tr === cur) continue;
+      const t = tr(cur); rec[a] = { en: cur, tr: t };
+      if (t !== cur) el.setAttribute(a, t);
+    }
+  }
+  function trNode(n) {
+    const p = n.parentNode; if (!p || NOTR.has(p.tagName)) return;
+    const cur = n.nodeValue, rec = ORIG_N.get(n);
+    if (rec && rec.tr === cur) return;
+    const t = tr(cur); ORIG_N.set(n, { en: cur, tr: t });
+    if (t !== cur) n.nodeValue = t;
+  }
+  function trTree(root) {
+    if (lang !== 'ms' || !root) return;
+    if (root.nodeType === 3) { trNode(root); return; }
+    if (root.nodeType !== 1 || NOTR.has(root.tagName) || root.tagName === 'svg' || root.namespaceURI === 'http://www.w3.org/2000/svg') return;
+    trAttrs(root);
+    if (isUnit(root)) {
+      const cur = root.innerHTML, rec = ORIG_E.get(root);
+      if (rec && rec.tr === cur) return;
+      const t = tr(cur);
+      if (t !== cur) { ORIG_E.set(root, { en: cur, tr: t }); root.innerHTML = t; return; }
+    }
+    for (const c of Array.from(root.childNodes)) trTree(c);
+  }
+  function restoreEn(root) {
+    root.querySelectorAll('*').forEach(el => {
+      const u = ORIG_E.get(el); if (u && el.innerHTML === u.tr) el.innerHTML = u.en; ORIG_E.delete(el);
+      const a = ORIG_A.get(el); if (a) { for (const k in a) if (el.getAttribute(k) === a[k].tr) el.setAttribute(k, a[k].en); ORIG_A.delete(el); }
+    });
+    const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT); let n;
+    while ((n = w.nextNode())) { const r = ORIG_N.get(n); if (r && n.nodeValue === r.tr) n.nodeValue = r.en; ORIG_N.delete(n); }
+  }
+  const langObserver = new MutationObserver(muts => {
+    if (lang !== 'ms') return;
+    const dirty = new Set();
+    for (const m of muts) {
+      if (m.type === 'attributes') { trAttrs(m.target); continue; }
+      const el = m.type === 'characterData' ? m.target.parentElement : m.target;
+      if (el) dirty.add(el);
+    }
+    for (const el of dirty) { let skip = false; for (let a = el.parentElement; a; a = a.parentElement) if (dirty.has(a)) { skip = true; break; } if (!skip) trTree(el); }
+  });
+  function syncLangUi() {
+    document.documentElement.lang = lang === 'ms' ? 'ms' : 'en';
+    document.querySelectorAll('.lang button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.lang === lang)));
+  }
+  function setLang(l) {
+    if (l === lang) return;
+    if (l === 'en') restoreEn(document.body);
+    lang = l; try { localStorage.setItem('etp-lang', l); } catch (_) {}
+    syncLangUi();
+    if (typeof mode !== 'undefined' && mode === 'local') renderLocalBar();
+    renderAll(); applyTheme();
+    if (l === 'ms') trTree(document.body);
+  }
+  document.querySelectorAll('.lang button').forEach(b => b.addEventListener('click', () => setLang(b.dataset.lang)));
+  function initLang() {
+    syncLangUi();
+    langObserver.observe(document.body, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: TR_ATTRS });
+  }
+
+  initLang();
   renderAll(); applyTheme();
+  if (lang === 'ms') trTree(document.body);
   connect();
   showView(location.hash.slice(1));
 </script>

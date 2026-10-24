@@ -1400,8 +1400,10 @@
 
   /* ---------- Pending actions ---------- */
   // AIL series end dates (SIRI 1-5 sheets of the Master List); Kirkpatrick L3 window is 60-90 days after training
-  const SERIES_START = { 1: '2026-08-11', 2: '2026-08-18', 3: '2026-09-08', 4: '2026-09-14', 5: '2026-09-22' };
-  const SERIES_END = { 1: '2026-08-13', 2: '2026-08-20', 3: '2026-09-10', 4: '2026-09-16', 5: '2026-09-24' };
+  // AIL Development Programme schedule (Core 1). Series 5 runs on 14, 15 and 17 Sept (not consecutive).
+  const SERIES_START = { 1: '2026-08-11', 2: '2026-08-18', 3: '2026-09-01', 4: '2026-09-08', 5: '2026-09-14' };
+  const SERIES_END = { 1: '2026-08-13', 2: '2026-08-20', 3: '2026-09-03', 4: '2026-09-10', 5: '2026-09-17' };
+  const SERIES_VENUE = { 1: 'Impiana KLCC Hotel', 2: 'Impiana KLCC Hotel', 3: 'Royale Chulan KL', 4: 'Royale Chulan KL', 5: 'Impiana KLCC Hotel' };
   const DAY = 864e5;
   const ACTIONS = [
     { key: 'q2', title: 'Verify Q2 status form', role: 'HOD' },
@@ -1604,7 +1606,7 @@
     const pres = parseDay(t.presentationDate);
     const steps = [
       { what: 'Awareness & potential identification', when: 'Oct 2025 · Harrison assessment', state: 'done' },
-      { what: 'AIL development programme (Core i)', when: t.series && sStart ? `Series ${t.series} · ${d(sStart)} – ${d(sEnd)}` : 'Not attended', state: t.idpAttendance ? 'done' : 'open' },
+      { what: 'AIL development programme (Core i)', when: t.series && sStart ? `Series ${t.series} · ${Number(t.series) === 5 ? '14, 15 & ' + d(sEnd) : d(sStart) + ' – ' + d(sEnd)} · ${SERIES_VENUE[Number(t.series)]}` : 'Not attended', state: t.idpAttendance ? 'done' : 'open' },
       { what: 'Q2 status form', when: t.formQ2 || 'Pending', state: verified(t) ? 'done' : 'open' },
       { what: 'Kirkpatrick L3: SV Form', when: t.l3Sv ? 'Submitted by supervisor' : sEnd ? `Window ${d(sEnd + 60 * DAY)} – ${d(sEnd + 90 * DAY)}` : 'After AIL attendance', state: t.l3Sv ? 'done' : 'open' },
       { what: 'Kirkpatrick L3: Presentation', when: pres ? (t.l3Presentation ? `Presented ${fmtDate(t.presentationDate)}` : pres >= today ? `Scheduled ${fmtDate(t.presentationDate)}` : `Planned ${fmtDate(t.presentationDate)}, not recorded`) : 'No date recorded', state: t.l3Presentation ? 'done' : 'open' },

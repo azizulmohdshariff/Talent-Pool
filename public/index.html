@@ -409,6 +409,8 @@
   .hc { display: inline-block; min-width: 34px; padding: 2px 4px; border-radius: 5px; font-family: var(--mono); font-size: 12px; font-weight: 500; text-align: center; font-variant-numeric: tabular-nums; }
   .hc-g { background: var(--ok-bg); color: var(--ok); } .hc-y { background: var(--warn-bg); color: var(--warn); } .hc-r { background: var(--bad-bg); color: var(--bad); }
   #hRows tr { cursor: pointer; } #hRows tr:hover { background: var(--sunken); }
+  .cdiff { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: var(--info-bg); color: var(--fg); border: 1px solid var(--muted); font-size: 11px; font-weight: 700; line-height: 1; cursor: help; vertical-align: middle; }
+  .cdiff-note { display: flex; gap: 8px; align-items: flex-start; }
   .h-prof { display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: 16px; align-items: start; }
   @media (max-width: 700px) { .h-prof { grid-template-columns: 1fr; } }
   .radar { width: 100%; max-width: 300px; height: auto; display: block; margin: 0 auto; }
@@ -840,7 +842,7 @@
       <div class="toolbar">
         <input type="search" id="hQ" placeholder="Search talent or staff no." aria-label="Search Harrison results">
         <select id="hUnit" aria-label="Filter by department or division"><option value="">All departments / divisions</option></select>
-        <select id="hCat" aria-label="Filter by category"><option value="">All categories</option><option>Red</option><option>Yellow</option><option>Green</option></select>
+        <select id="hCat" aria-label="Filter by category"><option value="">All categories</option><option>Red</option><option>Yellow</option><option>Green</option><option value="diff" id="hCatDiffOpt">≠ Differs from colour count</option></select>
         <select id="hSort" aria-label="Sort"><option value="low">Lowest overview first</option><option value="high">Highest overview first</option><option value="name">Name</option></select>
         <button class="btn" type="button" id="hCsv" hidden>Download CSV</button>
         <label class="btn hImportLbl" for="hFile">Import Harrison results…</label>
@@ -854,6 +856,7 @@
         </table>
       </div>
       <div id="hEmpty" class="empty" hidden></div>
+      <div class="note cdiff-note" id="hDiffNote" hidden><span class="cdiff">≠</span> <b id="hDiffN">0</b> talent whose slide category differs from the colour count (5 or more of the 10 competencies in one colour, checked Red, then Yellow, then Green). The category from the HCC slides is kept. Hover or tap the ≠ for the counts, or use the category filter.</div>
       <div class="note">Groups: F Forward-Looking · A Agile · I Innovation · T Teamwork · H High Performance · IHSAN Ihsan Leadership. Overview colours: green ≥ 75, yellow 60–74, red &lt; 60. The overview score also sets <b>potential</b> on the 9-Box tab.</div>
     </div>
 
@@ -1757,6 +1760,11 @@
   const hPotential = t => hasH(t) ? (t.hOverview >= 75 ? 3 : t.hOverview >= 60 ? 2 : 1) : null;
   const potentialOf = t => t.potential || hPotential(t);
   const CAT_CLS = { Red: 'p-bad', Yellow: 'p-warn', Green: 'p-ok' };
+  // Category implied by the colour count of the 10 competencies: 5 or more of one colour, checked Red, then Yellow, then Green
+  const colourCount = t => { const c = { r: 0, y: 0, g: 0 }; COMPS.forEach(k => { c[hBand(t[k.k])]++; }); return c; };
+  const colourCat = t => { const c = colourCount(t); return c.r >= 5 ? 'Red' : c.y >= 5 ? 'Yellow' : 'Green'; };
+  const catDiff = t => hasH(t) && !!t.hCat && colourCat(t) !== t.hCat;
+  const catDiffText = t => { const c = colourCount(t); return `Slide category ${t.hCat}; the colour count gives ${colourCat(t)} (${c.r} red, ${c.y} yellow, ${c.g} green). The slide category is kept.`; };
   const avg = (list, k) => list.length ? list.reduce((a, t) => a + t[k], 0) / list.length : 0;
   let hCatFilter = '';
 
@@ -1782,14 +1790,16 @@
     $('hUnit').innerHTML = '<option value="">All departments / divisions</option>' + units.map(x => `<option value="${esc(x)}">${esc(titleCase(x))}</option>`).join('');
     $('hUnit').value = cu;
     $('hCat').value = hCatFilter;
+    const nDiff = all.filter(catDiff).length; $('hCatDiffOpt').textContent = `≠ Differs from colour count (${nDiff})`;
+    $('hDiffNote').hidden = !nDiff; $('hDiffN').textContent = nDiff;
     $('hHead').innerHTML = '<th>Talent</th><th class="c">Category</th><th class="c" title="Emerging Leader Overview">Overview</th>' +
       COMPS.map(c => `<th class="c" title="${c.name} (${c.g})">${c.short}<br><span class="sub">${c.g}</span></th>`).join('');
     const q = $('hQ').value.trim().toLowerCase(), sort = $('hSort').value;
-    const list = all.filter(t => (!cu || unitOf(t) === cu) && (!hCatFilter || t.hCat === hCatFilter) && (!q || (t.name + ' ' + t.staffNo).toLowerCase().includes(q)))
+    const list = all.filter(t => (!cu || unitOf(t) === cu) && (!hCatFilter || (hCatFilter === 'diff' ? catDiff(t) : t.hCat === hCatFilter)) && (!q || (t.name + ' ' + t.staffNo).toLowerCase().includes(q)))
       .sort((x, y) => sort === 'name' ? String(x.name).localeCompare(String(y.name)) : sort === 'high' ? y.hOverview - x.hOverview : x.hOverview - y.hOverview);
     $('hCount').textContent = all.length ? `${list.length} of ${all.length} talent` : '';
     $('hRows').innerHTML = list.map(t => `<tr data-id="${esc(t.id)}" tabindex="0"><td><div class="who">${esc(titleCase(t.name))}</div><div class="sub">${esc(t.staffNo)} · ${esc(titleCase(unitOf(t)))}</div></td>
-      <td class="c"><span class="pill ${CAT_CLS[t.hCat] || 'p-mute'}">${esc(t.hCat || '-')}</span></td>
+      <td class="c"><span class="pill ${CAT_CLS[t.hCat] || 'p-mute'}">${esc(t.hCat || '-')}</span>${catDiff(t) ? ` <span class="cdiff" role="img" aria-label="${esc(catDiffText(t))}" title="${esc(catDiffText(t))}">≠</span>` : ''}</td>
       <td class="c"><span class="hc hc-${oBand(t.hOverview)}">${t.hOverview.toFixed(0)}</span></td>` +
       COMPS.map(c => `<td class="c"><span class="hc hc-${hBand(t[c.k])}">${t[c.k].toFixed(1)}</span></td>`).join('') + '</tr>').join('');
     const empty = $('hEmpty');
@@ -1814,10 +1824,10 @@
   $('hRows').addEventListener('click', e => { const tr = e.target.closest('tr[data-id]'); if (tr) openProfile(tr.dataset.id, 'harrison'); });
   $('hRows').addEventListener('keydown', e => { if (e.key === 'Enter') { const tr = e.target.closest('tr[data-id]'); if (tr) openProfile(tr.dataset.id, 'harrison'); } });
 
-  const H_HEAD = ['STAFF NO', 'STAFF NAME', 'CATEGORY', 'EMERGING LEADER OVERVIEW', ...COMPS.map(c => c.name.toUpperCase())];
+  const H_HEAD = ['STAFF NO', 'STAFF NAME', 'CATEGORY', 'EMERGING LEADER OVERVIEW', ...COMPS.map(c => c.name.toUpperCase()), 'CATEGORY BY COLOUR COUNT'];
   $('hCsv').onclick = () => {
     const cell = v => { const s = String(v ?? ''); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
-    const rows = talents.filter(hasH).map(t => [t.staffNo, t.name, t.hCat, ...H_KEYS.map(k => t[k])]);
+    const rows = talents.filter(hasH).map(t => [t.staffNo, t.name, t.hCat, ...H_KEYS.map(k => t[k]), colourCat(t)]);
     saveCsv('ETP-2026-Harrison-results.csv', '﻿' + [H_HEAD, ...rows].map(r => r.map(cell).join(',')).join('\r\n'));
   };
   $('hFile').addEventListener('change', async e => {
@@ -1873,11 +1883,11 @@
     if (!hasH(t)) { box.hidden = false; $('profHCat').innerHTML = ''; $('profRadar').innerHTML = ''; $('profHSide').innerHTML = '<p class="note">No Harrison results for this talent.</p>'; return; }
     box.hidden = false;
     const all = talents.filter(hasH), ga = {}; COMPS.forEach(c => { ga[c.k] = avg(all, c.k); });
-    $('profHCat').innerHTML = `<span class="pill ${CAT_CLS[t.hCat] || 'p-mute'}">${esc(t.hCat || '-')}</span>`;
+    $('profHCat').innerHTML = `<span class="pill ${CAT_CLS[t.hCat] || 'p-mute'}">${esc(t.hCat || '-')}</span>` + (catDiff(t) ? ` <span class="cdiff" role="img" aria-label="${esc(catDiffText(t))}" title="${esc(catDiffText(t))}">≠</span>` : '');
     $('profRadar').innerHTML = radarSvg(t, ga);
     const sorted = COMPS.map(c => ({ ...c, v: t[c.k], d: t[c.k] - ga[c.k] })).sort((x, y) => y.v - x.v);
     const li = c => `<li><span>${c.name}</span><span class="hc hc-${hBand(c.v)}">${c.v.toFixed(1)}</span><span class="sub">${c.d >= 0 ? '+' : ''}${c.d.toFixed(1)} vs avg</span></li>`;
-    $('profHSide').innerHTML = `<div class="h-score"><span class="label">Emerging Leader Overview</span><b class="hc hc-${oBand(t.hOverview)}">${t.hOverview.toFixed(0)}</b><span class="note">Potential: ${LEVEL[hPotential(t)]}${t.potential ? ` (manually set to ${LEVEL[t.potential]})` : ''} · group avg ${avg(all, 'hOverview').toFixed(1)}</span></div>
+    $('profHSide').innerHTML = `${catDiff(t) ? `<div class="note cdiff-note"><span class="cdiff">≠</span><span>${esc(catDiffText(t))}</span></div>` : ''}<div class="h-score"><span class="label">Emerging Leader Overview</span><b class="hc hc-${oBand(t.hOverview)}">${t.hOverview.toFixed(0)}</b><span class="note">Potential: ${LEVEL[hPotential(t)]}${t.potential ? ` (manually set to ${LEVEL[t.potential]})` : ''} · group avg ${avg(all, 'hOverview').toFixed(1)}</span></div>
       <div class="label">Strengths</div><ul class="h-list">${sorted.slice(0, 3).map(li).join('')}</ul>
       <div class="label">Development areas</div><ul class="h-list">${sorted.slice(-3).reverse().map(li).join('')}</ul>`;
   }
@@ -2292,7 +2302,7 @@
     // ---- Individual pages (optional)
     if (withTalents) {
       const talentTable = (list, compact) => {
-        const rows = list.map((t, i) => [i + 1, t.staffNo, P(titleCase(t.name)) + (compact ? '' : '\n' + P(titleCase(unitOf(t)))), t.hCat, t.hOverview.toFixed(0), ...COMPS.map(c => t[c.k].toFixed(1))]);
+        const rows = list.map((t, i) => [i + 1, t.staffNo, P(titleCase(t.name)) + (compact ? '' : '\n' + P(titleCase(unitOf(t)))), t.hCat + (catDiff(t) ? ' *' : ''), t.hOverview.toFixed(0), ...COMPS.map(c => t[c.k].toFixed(1))]);
         doc.autoTable({ startY: doc.__ty, margin: { left: M, right: M }, headStyles: { ...head, fontSize: 7, halign: 'center' }, theme: 'grid',
           styles: { fontSize: compact ? 7.2 : 7.8, textColor: C.ink, cellPadding: compact ? 1 : 1.5, lineColor: C.line, lineWidth: 0.1, halign: 'center', valign: 'middle' },
           head: [['#', 'Staff', 'Talent', 'Cat.', 'Ovw', ...COMPS.map(c => c.short)]], body: rows,
@@ -2300,14 +2310,14 @@
           didParseCell: d => {
             if (d.section !== 'body' || d.column.index < 3) return;
             let b;
-            if (d.column.index === 3) { b = { Red: 'r', Yellow: 'y', Green: 'g' }[d.cell.raw]; }
+            if (d.column.index === 3) { b = { Red: 'r', Yellow: 'y', Green: 'g' }[String(d.cell.raw).replace(' *', '')]; }
             else if (d.column.index === 4) b = oBand(Number(d.cell.raw));
             else b = hBand(Number(d.cell.raw));
             if (b) { d.cell.styles.fillColor = BG[b]; d.cell.styles.textColor = FG[b]; d.cell.styles.fontStyle = 'bold'; }
           } });
       };
       const legend = yy => { doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(...C.muted);
-        doc.text(doc.splitTextToSize(P('Ovw = Emerging Leader Overview (green >= 75, yellow 60-74, red < 60). ' + COMPS.map(c => `${c.short} ${c.name}`).join(' | ') + '. Competency scores out of 10: green >= 7.5, yellow 6.0-7.4, red < 6.0.'), CW), M, yy); };
+        doc.text(doc.splitTextToSize(P('Ovw = Emerging Leader Overview (green >= 75, yellow 60-74, red < 60). ' + COMPS.map(c => `${c.short} ${c.name}`).join(' | ') + '. Competency scores out of 10: green >= 7.5, yellow 6.0-7.4, red < 6.0.' + (all.some(catDiff) ? ' * Category from the HCC slides differs from the colour count of the 10 competencies (5 or more in one colour, Red then Yellow then Green); the slide category is shown.' : '')), CW), M, yy); };
 
       doc.addPage(); y = 14;
       const reds = all.filter(t => t.hCat === 'Red').sort((x, z) => x.hOverview - z.hOverview);

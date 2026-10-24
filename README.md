@@ -1,25 +1,25 @@
 # Talent Pool Portal
 
-Portal pemantauan Emerging Talent Program (ETP) 2026: TPG Index, funnel Kirkpatrick L3,
-pencapaian mengikut jabatan/bahagian dan senarai talent yang boleh dikemas kini.
+Monitoring portal for the Emerging Talent Program (ETP) 2026: TPG Index summary, Kirkpatrick L3
+funnel, KPI status by department and talent, and an editable talent list.
 
-## Fail
+## Files
 
-- `index.html` — portal (dibuka oleh GitHub Pages)
-- `dashboard.html` — dashboard monitor contoh yang asal
+- `index.html` — the portal (served by GitHub Pages)
+- `dashboard.html` — the original sample monitor dashboard
 
 ## Data
 
-Repo ini **tidak** menyimpan sebarang data staf.
+This repository does **not** contain any staff data.
 
-- **Di GitHub Pages / fail tempatan:** klik **Pilih fail…** dan pilih Master List ETP (.xlsx)
-  atau CSV yang dimuat turun dari portal. Fail dibaca dalam browser sahaja dan disimpan dalam
-  browser itu (localStorage). Guna **Muat turun CSV** untuk simpan perubahan, dan
-  **Kosongkan data** untuk buang data dari browser.
-- **Di claude.ai:** portal bersambung ke pangkalan data dikongsi pasukan.
+- **On GitHub Pages / as a local file:** click **Choose file…** and pick the ETP Master List (.xlsx)
+  or a CSV downloaded from the portal. The file is read in the browser only and kept in that
+  browser (localStorage). Use **Download CSV** to keep changes and **Clear data** to remove the
+  data from the browser.
+- **On claude.ai:** the portal connects to the team's shared database.
 
-## Aktifkan GitHub Pages
+## Enable GitHub Pages
 
 1. Settings → General → Danger Zone → **Change visibility** → Public
-2. Settings → **Pages** → Source: *Deploy from a branch* → Branch `master`, folder `/ (root)` → Save
-3. Portal akan tersedia di `https://azizulmohdshariff.github.io/Talent-Pool/`
+2. Settings → **Pages** → Source: *Deploy from a branch* → branch `master`, folder `/ (root)` → Save
+3. The portal will be available at `https://azizulmohdshariff.github.io/Talent-Pool/`

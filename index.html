@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ms">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -180,9 +180,9 @@
 <div class="wrap">
   <div class="top">
     <div class="brand"><h1>Talent Pool Portal</h1><small>Emerging Talent Program (ETP) 2026 · KPI 10 Talent Pool Growth Index <span id="whoami"></span></small></div>
-    <nav aria-label="Bahagian portal">
-      <a href="#ringkasan" data-view="ringkasan">Ringkasan</a>
-      <a href="#kpi" data-view="kpi">Status KPI</a>
+    <nav aria-label="Portal sections">
+      <a href="#summary" data-view="summary">Summary</a>
+      <a href="#kpi" data-view="kpi">KPI Status</a>
       <a href="#talent" data-view="talent">Talent</a>
     </nav>
   </div>
@@ -192,38 +192,38 @@
   <section class="panel" id="localBar" hidden>
     <div class="localrow">
       <div class="localtext">
-        <h2 id="localTitle">Muatkan Master List ETP</h2>
-        <div class="note" id="localNote">Pilih fail Excel Master List ETP (.xlsx) atau CSV yang dimuat turun dari portal ini. Fail dibaca dalam browser anda sahaja. Ia tidak dimuat naik atau dihantar ke mana-mana.</div>
+        <h2 id="localTitle">Load the ETP Master List</h2>
+        <div class="note" id="localNote">Choose the ETP Master List Excel file (.xlsx) or a CSV downloaded from this portal. The file is read in your browser only. It is not uploaded or sent anywhere.</div>
       </div>
       <div class="localactions">
-        <label class="btn primary" for="fileIn" id="fileLabel">Pilih fail…</label>
+        <label class="btn primary" for="fileIn" id="fileLabel">Choose file…</label>
         <input type="file" id="fileIn" accept=".xlsx,.xls,.csv" hidden>
-        <button class="btn" type="button" id="clearBtn" hidden>Kosongkan data</button>
+        <button class="btn" type="button" id="clearBtn" hidden>Clear data</button>
       </div>
     </div>
     <div class="error" id="localError" hidden></div>
   </section>
 
-  <!-- RINGKASAN -->
-  <section id="view-ringkasan" class="stack">
+  <!-- SUMMARY -->
+  <section id="view-summary" class="stack">
     <div class="kpis">
-      <div class="panel kpi accent"><div class="label">Jumlah talent</div><div class="value" id="kTotal">0</div><div class="note">dikenal pasti dalam ETP 2026</div></div>
-      <div class="panel kpi" id="kTpgCard"><div class="label">TPG Index rasmi</div><div class="value" id="kTpg">0%</div><div class="note" id="kTpgNote">0 talent capai &amp; disahkan</div></div>
-      <div class="panel kpi" id="kRatingCard"><div class="label">Rating keseluruhan</div><div class="value" id="kRating">-<small> / 5</small></div><div class="note">≥80%=5 · ≥65%=4 · ≥50%=3 · ≥40%=2</div></div>
-      <div class="panel kpi" id="kReadyCard"><div class="label">Readiness</div><div class="value" id="kReady">0%</div><div class="note" id="kReadyNote">hanya menunggu Kirkpatrick L3</div></div>
+      <div class="panel kpi accent"><div class="label">Total talent</div><div class="value" id="kTotal">0</div><div class="note">identified in ETP 2026</div></div>
+      <div class="panel kpi" id="kTpgCard"><div class="label">Official TPG Index</div><div class="value" id="kTpg">0%</div><div class="note" id="kTpgNote">0 talent achieved &amp; verified</div></div>
+      <div class="panel kpi" id="kRatingCard"><div class="label">Overall rating</div><div class="value" id="kRating">-<small> / 5</small></div><div class="note">≥80%=5 · ≥65%=4 · ≥50%=3 · ≥40%=2</div></div>
+      <div class="panel kpi" id="kReadyCard"><div class="label">Readiness</div><div class="value" id="kReady">0%</div><div class="note" id="kReadyNote">awaiting Kirkpatrick L3 only</div></div>
     </div>
 
     <div class="grid2">
       <div class="panel">
-        <div class="label">Rantaian pengesahan Kirkpatrick L3</div>
+        <div class="label">Kirkpatrick L3 verification chain</div>
         <div class="bars" id="funnel"></div>
         <div class="note" id="funnelNote"></div>
       </div>
       <div class="panel">
-        <div class="label">Pencapaian penunjuk Core &amp; Stretch</div>
+        <div class="label">Core &amp; Stretch indicator achievement</div>
         <div class="table-scroll">
           <table>
-            <thead><tr><th>Penunjuk</th><th class="num">Selesai</th><th class="num">%</th><th>Status</th></tr></thead>
+            <thead><tr><th>Indicator</th><th class="num">Completed</th><th class="num">%</th><th>Status</th></tr></thead>
             <tbody id="indicators"></tbody>
           </table>
         </div>
@@ -231,26 +231,26 @@
     </div>
 
     <div class="panel">
-      <div class="label">TPG Index mengikut jabatan / bahagian</div>
+      <div class="label">TPG Index by department / division</div>
       <div class="table-scroll">
         <table>
-          <thead><tr><th>Jabatan / bahagian</th><th class="num">Talent</th><th class="num">Capai &amp; disahkan</th><th class="num">TPG Index</th><th class="c">Rating</th><th class="num">Readiness</th></tr></thead>
+          <thead><tr><th>Department / division</th><th class="num">Talent</th><th class="num">Achieved &amp; verified</th><th class="num">TPG Index</th><th class="c">Rating</th><th class="num">Readiness</th></tr></thead>
           <tbody id="units"></tbody>
         </table>
       </div>
-      <div class="formula">TPG Index = talent yang capai <b>kedua-dua Core</b> (IDP Milestone + Kirkpatrick L3: SV Form, Pembentangan, HOD Form) <b>dan ≥1 Stretch</b>, berstatus Verified ÷ jumlah talent. Readiness ialah metrik tambahan (bukan rating rasmi): talent Verified yang sudah selesai IDP dan ≥1 Stretch, dan hanya menunggu penilaian L3. Pejabat PUK/KPE dipecahkan mengikut bahagian.</div>
+      <div class="formula">TPG Index = talent who achieved <b>both Core indicators</b> (IDP Milestone + Kirkpatrick L3: SV Form, Presentation, HOD Form) <b>and ≥1 Stretch indicator</b>, with Verified status ÷ total talent. Readiness is a supplementary metric (not an official rating): Verified talent who have completed IDP and ≥1 Stretch and are awaiting only the L3 assessment. Pejabat PUK/KPE is broken down by division.</div>
     </div>
 
     <div class="grid2">
       <div class="panel">
-        <div class="label">Kehadiran program AIL mengikut siri</div>
-        <div class="chart-box"><canvas id="seriesChart" aria-label="Carta bilangan peserta mengikut siri"></canvas></div>
+        <div class="label">AIL programme attendance by series</div>
+        <div class="chart-box"><canvas id="seriesChart" aria-label="Chart of participants by series"></canvas></div>
       </div>
       <div class="panel">
-        <div class="label">Pembentangan L3 terkini</div>
+        <div class="label">Latest L3 presentations</div>
         <div class="table-scroll">
           <table>
-            <thead><tr><th>Tarikh</th><th>Talent</th><th class="c">Bentang</th><th class="c">HOD</th></tr></thead>
+            <thead><tr><th>Date</th><th>Talent</th><th class="c">Presented</th><th class="c">HOD</th></tr></thead>
             <tbody id="presList"></tbody>
           </table>
         </div>
@@ -258,17 +258,17 @@
     </div>
   </section>
 
-  <!-- STATUS KPI -->
+  <!-- KPI STATUS -->
   <section id="view-kpi" class="stack" hidden>
     <div class="kpis two">
-      <div class="panel kpi" id="kcDept"><div class="tier">Jabatan · Corporate target</div><div class="label">TPG Index</div><div class="value" id="kcDeptVal">-</div><div class="note" id="kcDeptNote"></div></div>
-      <div class="panel kpi" id="kcTal"><div class="tier">Talent · Personal Growth &amp; Competency Development</div><div class="label">Talent capai sasaran (rating ≥4)</div><div class="value" id="kcTalVal">-</div><div class="note" id="kcTalNote"></div></div>
+      <div class="panel kpi" id="kcDept"><div class="tier">Department · Corporate target</div><div class="label">TPG Index</div><div class="value" id="kcDeptVal">-</div><div class="note" id="kcDeptNote"></div></div>
+      <div class="panel kpi" id="kcTal"><div class="tier">Talent · Personal Growth &amp; Competency Development</div><div class="label">Talent meeting target (rating ≥4)</div><div class="value" id="kcTalVal">-</div><div class="note" id="kcTalNote"></div></div>
     </div>
-    <div class="note">KPI 10 · Learning &amp; Growth (20%) · Optimize Human Capital · wajaran 10% bagi setiap peringkat. Sasaran kumpulan: gred TH4 hingga TH6 (Emerging Talent). Penunjuk dikira daripada data tab Talent.</div>
+    <div class="note">KPI 10 · Learning &amp; Growth (20%) · Optimize Human Capital · 10% weightage at each level. Target group: grades TH4 to TH6 (Emerging Talent). Indicators are calculated from the Talent tab data.</div>
 
     <div class="panel">
       <div class="section-head">
-        <div><h2>KPI Talent</h2><p>Bilangan penunjuk pertumbuhan yang dicapai setiap talent (daripada 4: Core i, Core ii, Stretch i, Stretch ii). Sasaran ialah rating 4: kedua-dua Core dan sekurang-kurangnya 1 Stretch.</p></div>
+        <div><h2>Talent KPI</h2><p>Number of growth indicators achieved by each talent (out of 4: Core i, Core ii, Stretch i, Stretch ii). The target is rating 4: both Core indicators and at least 1 Stretch indicator.</p></div>
       </div>
       <div class="bars rbars" id="talentRatingBars"></div>
       <div class="callout" id="talentBlocker" hidden></div>
@@ -276,11 +276,11 @@
 
     <div class="panel">
       <div class="section-head">
-        <div><h2>KPI Jabatan</h2><p>TPG Index = talent yang capai 2 Core + ≥1 Stretch (berstatus Verified) ÷ jumlah talent jabatan. Lajur sasaran menunjukkan berapa talent lagi perlu lengkap untuk naik rating.</p></div>
+        <div><h2>Department KPI</h2><p>TPG Index = talent who achieved 2 Core + ≥1 Stretch (Verified status) ÷ total talent in the department. The target columns show how many more talent must complete to move up a rating.</p></div>
       </div>
       <div class="table-scroll">
         <table>
-          <thead><tr><th>Jabatan / bahagian</th><th class="num">Talent</th><th class="num">Capai</th><th class="num">TPG Index</th><th class="c">Rating</th><th class="num">Lagi untuk rating 4</th><th class="num">Lagi untuk rating 5</th></tr></thead>
+          <thead><tr><th>Department / division</th><th class="num">Talent</th><th class="num">Achieved</th><th class="num">TPG Index</th><th class="c">Rating</th><th class="num">More for rating 4</th><th class="num">More for rating 5</th></tr></thead>
           <tbody id="deptRows"></tbody>
         </table>
       </div>
@@ -288,10 +288,10 @@
 
     <div class="panel">
       <details class="ref">
-        <summary>Rujukan: skala rating dan definisi penunjuk</summary>
+        <summary>Reference: rating scales and indicator definitions</summary>
         <div class="refgrid">
           <div>
-            <h3>Jabatan: TPG Index</h3>
+            <h3>Department: TPG Index</h3>
             <table class="scale"><tbody>
               <tr><td><span class="rating pill p-ok">5</span></td><td>≥ 80% TPG Index</td></tr>
               <tr><td><span class="rating pill p-ok">4</span></td><td>≥ 65% TPG Index</td></tr>
@@ -299,32 +299,32 @@
               <tr><td><span class="rating pill p-bad">2</span></td><td>≥ 40% TPG Index</td></tr>
               <tr><td><span class="rating pill p-bad">1</span></td><td>&lt; 40% TPG Index</td></tr>
             </tbody></table>
-            <p class="note">Dokumen menyatakan rating 1 sebagai &lt; 30%. Portal ikut jalur Master List (&lt; 40%) supaya julat 30–39% tidak tertinggal.</p>
+            <p class="note">The KPI document states rating 1 as &lt; 30%. The portal follows the Master List bands (&lt; 40%) so that 30–39% is not left without a rating.</p>
           </div>
           <div>
             <h3>Talent: Personal Growth &amp; Competency Development</h3>
             <table class="scale"><tbody>
-              <tr><td><span class="rating pill p-ok">5</span></td><td>Kedua-dua Core + kedua-dua Stretch</td></tr>
-              <tr><td><span class="rating pill p-ok">4</span></td><td>2 Core + 1 Stretch (sasaran)</td></tr>
-              <tr><td><span class="rating pill p-warn">3</span></td><td>2 Core sahaja</td></tr>
-              <tr><td><span class="rating pill p-bad">2</span></td><td>Hanya 1 Core</td></tr>
-              <tr><td><span class="rating pill p-bad">1</span></td><td>Tiada bukti pertumbuhan atau sumbangan extra-mile</td></tr>
+              <tr><td><span class="rating pill p-ok">5</span></td><td>Both Core + both Stretch indicators</td></tr>
+              <tr><td><span class="rating pill p-ok">4</span></td><td>2 Core + 1 Stretch (target)</td></tr>
+              <tr><td><span class="rating pill p-warn">3</span></td><td>2 Core indicators only</td></tr>
+              <tr><td><span class="rating pill p-bad">2</span></td><td>Only 1 Core indicator</td></tr>
+              <tr><td><span class="rating pill p-bad">1</span></td><td>No evidence of growth or extra-mile contribution</td></tr>
             </tbody></table>
           </div>
           <div>
-            <h3>Core (wajib)</h3>
+            <h3>Core (mandatory)</h3>
             <ul>
-              <li><b>Core i: IDP Milestone Completion.</b> Menghadiri program pembangunan HC (AIL Development Program). Disahkan oleh penyelia terus dan Ketua Jabatan/Bahagian; program disediakan dan disahkan oleh GHCD.</li>
-              <li><b>Core ii: Kirkpatrick Level 3, Behavioural Shift.</b> Menilai tingkah laku sebelum dan selepas latihan. Disokong bukti dokumen dan disahkan oleh HCD. Dalam portal ini, Core ii dikira lengkap apabila HOD Form disahkan.</li>
+              <li><b>Core i: IDP Milestone Completion.</b> Attending the HC development programme (AIL Development Program). Validated by the immediate supervisor and Head of Department/Division; programme provided and verified by GHCD.</li>
+              <li><b>Core ii: Kirkpatrick Level 3, Behavioural Shift.</b> Assesses behaviour before and after training. Supported by documentary evidence and validated by HCD. In this portal, Core ii counts as complete once the HOD Form is endorsed.</li>
             </ul>
           </div>
           <div>
             <h3>Stretch i: Productivity / Process Improvement</h3>
-            <p>≥ 1 inisiatif disiapkan, disahkan melalui dokumen dan disokong HOD. Contoh: penambahbaikan aliran kerja, peningkatan kualiti, pengoptimuman sistem digital, pengurangan kos, dokumentasi &amp; standard (SOP, garis panduan), penambahbaikan penyampaian perkhidmatan.</p>
+            <p>≥ 1 initiative completed, validated through documented deliverables and endorsed by the HOD. Examples: workflow enhancement, quality improvement, digital/systems optimisation, cost reduction, documentation &amp; standardisation (SOPs, guidelines), service delivery enhancement.</p>
           </div>
           <div>
             <h3>Stretch ii: Stretch Role / Extra-Mile</h3>
-            <p>≥ 1 inisiatif disiapkan, disahkan melalui dokumen dan disokong HOD. Contoh: peranan lebih tinggi daripada skop biasa, penglibatan rentas jabatan, projek khas, inisiatif sukarela di luar waktu kerja, inisiatif tambahan yang memberi nilai kepada TH.</p>
+            <p>≥ 1 initiative completed, validated through documented deliverables and endorsed by the HOD. Examples: a higher role than the normal scope, cross-department involvement, special projects, voluntary initiatives outside working hours, extra initiatives that add value to TH.</p>
           </div>
         </div>
       </details>
@@ -334,78 +334,78 @@
   <!-- TALENT -->
   <section id="view-talent" class="panel" hidden>
     <div class="toolbar">
-      <input type="search" id="q" placeholder="Cari nama, no. staf, jawatan, penyelia" aria-label="Cari talent">
-      <select id="fUnit" aria-label="Tapis jabatan atau bahagian"><option value="">Semua jabatan / bahagian</option></select>
-      <select id="fSeries" aria-label="Tapis siri"><option value="">Semua siri</option></select>
-      <select id="fStage" aria-label="Tapis tahap">
-        <option value="">Semua tahap</option>
-        <option value="tpg">Capai TPG</option>
-        <option value="ready">Menunggu L3 sahaja</option>
-        <option value="notready">Belum sedia</option>
-        <option value="nosv">L3: belum SV Form</option>
-        <option value="nopres">L3: belum bentang</option>
-        <option value="nohod">L3: belum HOD Form</option>
+      <input type="search" id="q" placeholder="Search name, staff no., title, supervisor" aria-label="Search talent">
+      <select id="fUnit" aria-label="Filter by department or division"><option value="">All departments / divisions</option></select>
+      <select id="fSeries" aria-label="Filter by series"><option value="">All series</option></select>
+      <select id="fStage" aria-label="Filter by stage">
+        <option value="">All stages</option>
+        <option value="tpg">TPG achieved</option>
+        <option value="ready">Awaiting L3 only</option>
+        <option value="notready">Not ready</option>
+        <option value="nosv">L3: no SV Form yet</option>
+        <option value="nopres">L3: not presented yet</option>
+        <option value="nohod">L3: no HOD Form yet</option>
       </select>
-      <button class="btn" id="csvBtn" type="button" hidden>Muat turun CSV</button>
-      <button class="btn primary" id="addBtn" type="button">+ Tambah talent</button>
+      <button class="btn" id="csvBtn" type="button" hidden>Download CSV</button>
+      <button class="btn primary" id="addBtn" type="button">+ Add talent</button>
     </div>
     <div class="note" id="countNote"></div>
     <div class="table-scroll">
       <table>
         <thead><tr>
-          <th>Talent</th><th>Jabatan / bahagian</th><th>Gred</th><th class="c">Siri</th>
+          <th>Talent</th><th>Department / division</th><th>Grade</th><th class="c">Series</th>
           <th class="c" title="Forms Q2 Verified">Q2</th><th class="c" title="Stretch 1: Process Improvement">S1</th><th class="c" title="Stretch 2: Stretch Role">S2</th>
-          <th class="c" title="Core 1: IDP Attendance">IDP</th><th class="c" title="Core 2 L3: SV Form">SV</th><th class="c" title="Core 2 L3: Pembentangan">Bentang</th><th class="c" title="Core 2 L3: HOD Form">HOD</th>
-          <th class="c" title="Rating KPI talent (1-5)">KPI</th><th>Tahap</th>
+          <th class="c" title="Core 1: IDP Attendance">IDP</th><th class="c" title="Core 2 L3: SV Form">SV</th><th class="c" title="Core 2 L3: Presentation">Pres.</th><th class="c" title="Core 2 L3: HOD Form">HOD</th>
+          <th class="c" title="Talent KPI rating (1-5)">KPI</th><th>Stage</th>
         </tr></thead>
         <tbody id="rows"></tbody>
       </table>
     </div>
     <div id="emptyList" class="empty" hidden></div>
-    <div class="note">Q2 = Forms Q2 Verified · S1/S2 = Stretch 1/2 · IDP = Core 1 kehadiran AIL · SV, Bentang, HOD = Core 2 Kirkpatrick L3. Klik baris untuk kemas kini.</div>
+    <div class="note">Q2 = Forms Q2 Verified · S1/S2 = Stretch 1/2 · IDP = Core 1 AIL attendance · SV, Pres., HOD = Core 2 Kirkpatrick L3. Click a row to update.</div>
   </section>
 
 </div>
 
 <dialog id="dlg" aria-labelledby="dlgTitle">
   <form class="card" id="form" method="dialog">
-    <div class="statusline"><h2 id="dlgTitle">Tambah talent</h2><span id="dlgStage"></span></div>
+    <div class="statusline"><h2 id="dlgTitle">Add talent</h2><span id="dlgStage"></span></div>
     <fieldset>
-      <legend>Maklumat staf</legend>
+      <legend>Staff details</legend>
       <div class="fields">
-        <div class="field"><label for="fStaffNo">No. staf *</label><input id="fStaffNo" required maxlength="20" pattern="[A-Za-z0-9_\-]+" placeholder="cth. KT1234"></div>
-        <div class="field"><label for="fGred">Gred</label><input id="fGred" maxlength="10" placeholder="cth. TH5"></div>
-        <div class="field full"><label for="fName">Nama *</label><input id="fName" required maxlength="160"></div>
-        <div class="field full"><label for="fTitle">Jawatan</label><input id="fTitle" maxlength="160"></div>
-        <div class="field full"><label for="fJabatan">Jabatan *</label><input id="fJabatan" required maxlength="160" list="jabList"></div>
-        <div class="field full"><label for="fBahagian">Bahagian</label><input id="fBahagian" maxlength="160" list="bahList"></div>
-        <div class="field"><label for="fEmail">Emel</label><input id="fEmail" type="email" maxlength="160"></div>
-        <div class="field"><label for="fGender">Jantina</label><select id="fGender"><option value="">-</option><option value="P">Perempuan</option><option value="L">Lelaki</option></select></div>
-        <div class="field"><label for="fSupervisor">Penyelia terus</label><input id="fSupervisor" maxlength="160"></div>
-        <div class="field"><label for="fKB">Ketua bahagian</label><input id="fKB" maxlength="160"></div>
-        <div class="field full"><label for="fKJ">Ketua jabatan</label><input id="fKJ" maxlength="160"></div>
+        <div class="field"><label for="fStaffNo">Staff no. *</label><input id="fStaffNo" required maxlength="20" pattern="[A-Za-z0-9_\-]+" placeholder="e.g. KT1234"></div>
+        <div class="field"><label for="fGred">Grade</label><input id="fGred" maxlength="10" placeholder="e.g. TH5"></div>
+        <div class="field full"><label for="fName">Name *</label><input id="fName" required maxlength="160"></div>
+        <div class="field full"><label for="fTitle">Title</label><input id="fTitle" maxlength="160"></div>
+        <div class="field full"><label for="fJabatan">Department *</label><input id="fJabatan" required maxlength="160" list="jabList"></div>
+        <div class="field full"><label for="fBahagian">Division</label><input id="fBahagian" maxlength="160" list="bahList"></div>
+        <div class="field"><label for="fEmail">Email</label><input id="fEmail" type="email" maxlength="160"></div>
+        <div class="field"><label for="fGender">Gender</label><select id="fGender"><option value="">-</option><option value="P">Female</option><option value="L">Male</option></select></div>
+        <div class="field"><label for="fSupervisor">Immediate supervisor</label><input id="fSupervisor" maxlength="160"></div>
+        <div class="field"><label for="fKB">Head of division</label><input id="fKB" maxlength="160"></div>
+        <div class="field full"><label for="fKJ">Head of department</label><input id="fKJ" maxlength="160"></div>
       </div>
     </fieldset>
     <fieldset>
-      <legend>Borang &amp; inisiatif</legend>
+      <legend>Forms &amp; initiative</legend>
       <div class="fields">
         <div class="field"><label for="fQ2">Forms Q2</label><select id="fQ2"><option>Verified</option><option>Pending</option></select></div>
         <div class="field"><label for="fQ3">Forms Q3</label><select id="fQ3"><option>Verified</option><option>Pending</option></select></div>
         <div class="field"><label for="fQ4">Forms Q4</label><select id="fQ4"><option>Verified</option><option>Pending</option></select></div>
-        <div class="field"><label for="fInit">Status inisiatif</label><select id="fInit"><option>In Progress</option><option>Completed</option><option>Not Started</option></select></div>
+        <div class="field"><label for="fInit">Initiative status</label><select id="fInit"><option>In Progress</option><option>Completed</option><option>Not Started</option></select></div>
       </div>
     </fieldset>
     <fieldset>
-      <legend>Penunjuk Core &amp; Stretch</legend>
+      <legend>Core &amp; Stretch indicators</legend>
       <div class="checks">
         <label><input type="checkbox" id="fS1"> Stretch 1: Process Improvement</label>
         <label><input type="checkbox" id="fS2"> Stretch 2: Stretch Role</label>
-        <label><input type="checkbox" id="fIdp"> Core 1: Kehadiran IDP (AIL)</label>
-        <div class="field"><label for="fSeriesIn">Siri AIL</label><select id="fSeriesIn"><option value="">-</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></div>
+        <label><input type="checkbox" id="fIdp"> Core 1: IDP attendance (AIL)</label>
+        <div class="field"><label for="fSeriesIn">AIL series</label><select id="fSeriesIn"><option value="">-</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></div>
         <label><input type="checkbox" id="fSv"> Core 2 L3: SV Form</label>
-        <label><input type="checkbox" id="fPres"> Core 2 L3: Pembentangan</label>
-        <label><input type="checkbox" id="fHod"> Core 2 L3: HOD Form (akhir)</label>
-        <div class="field"><label for="fPresDate">Tarikh pembentangan</label><input type="date" id="fPresDate"></div>
+        <label><input type="checkbox" id="fPres"> Core 2 L3: Presentation</label>
+        <label><input type="checkbox" id="fHod"> Core 2 L3: HOD Form (final)</label>
+        <div class="field"><label for="fPresDate">Presentation date</label><input type="date" id="fPresDate"></div>
       </div>
     </fieldset>
     <div class="note" id="fMeta"></div>
@@ -413,8 +413,8 @@
     <div class="actions">
       <div id="delArea"></div>
       <div class="right">
-        <button class="btn" type="button" id="cancelBtn">Batal</button>
-        <button class="btn primary" type="submit" id="saveBtn">Simpan</button>
+        <button class="btn" type="button" id="cancelBtn">Cancel</button>
+        <button class="btn primary" type="submit" id="saveBtn">Save</button>
       </div>
     </div>
   </form>
@@ -428,9 +428,9 @@
   const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const pct = (a, b) => b ? a / b : 0;
-  const fmtPct = v => (Math.round(v * 1000) / 10).toLocaleString('ms-MY', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%';
-  const fmtDate = s => s ? new Date(s + (s.length === 10 ? 'T00:00:00' : '')).toLocaleDateString('ms-MY', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
-  const tick = v => v ? '<span class="tick y" aria-label="Ya">✓</span>' : '<span class="tick n" aria-label="Tidak">✗</span>';
+  const fmtPct = v => (Math.round(v * 1000) / 10).toLocaleString('en-GB', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%';
+  const fmtDate = s => s ? new Date(s + (s.length === 10 ? 'T00:00:00' : '')).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
+  const tick = v => v ? '<span class="tick y" aria-label="Yes">✓</span>' : '<span class="tick n" aria-label="No">✗</span>';
 
   /* ---------- Peraturan KPI (ikut Master List ETP) ---------- */
   const verified = t => t.formQ2 === 'Verified';
@@ -439,7 +439,7 @@
   const isReady = t => verified(t) && t.idpAttendance && stretchOk(t);
   const rating = v => v >= .8 ? 5 : v >= .65 ? 4 : v >= .5 ? 3 : v >= .4 ? 2 : 1;
   const ratingCls = r => r >= 4 ? 'p-ok' : r === 3 ? 'p-warn' : 'p-bad';
-  const band = v => v >= .8 ? ['Baik', 'p-ok'] : v >= .5 ? ['Sederhana', 'p-warn'] : ['Perlu tindakan', 'p-bad'];
+  const band = v => v >= .8 ? ['Good', 'p-ok'] : v >= .5 ? ['Moderate', 'p-warn'] : ['Needs action', 'p-bad'];
   const PUK = 'PEJABAT PUK/KPE';
   const unitOf = t => (t.jabatan === PUK && t.bahagian && t.bahagian !== 'PEJABAT PENGARAH URUSAN KUMPULAN DAN KETUA PEGAWAI EKSEKUTIF') ? t.bahagian : (t.jabatan || '-');
   // Cascade KPI (Revision KPI TPG, Sept 2026)
@@ -448,7 +448,7 @@
   const growthCount = t => coreCount(t) + stretchCount(t);
   const talentRating = t => { const c = coreCount(t), s = stretchCount(t); return c === 2 ? (s === 2 ? 5 : s === 1 ? 4 : 3) : c === 1 ? 2 : 1; };
   const ratingChip = r => `<span class="rating pill ${ratingCls(r)}">${r}</span>`;
-  const stageOf = t => isTpg(t) ? ['Capai TPG', 'p-ok'] : isReady(t) ? ['Menunggu L3', 'p-info'] : ['Belum sedia', 'p-bad'];
+  const stageOf = t => isTpg(t) ? ['TPG achieved', 'p-ok'] : isReady(t) ? ['Awaiting L3', 'p-info'] : ['Not ready', 'p-bad'];
   const titleCase = s => String(s || '').toLowerCase().replace(/(^|[\s(\/&-])(\p{L})/gu, (m, a, b) => a + b.toUpperCase()).replace(/\bDan\b/g, 'dan').replace(/\bBin\b/g, 'bin').replace(/\bBinti\b/g, 'binti').replace(/\bBte\b/g, 'bte').replace(/\bPuk\/Kpe\b/g, 'PUK/KPE');
 
   let db = null, userApi = null, downloads = null, myId = null, canWrite = true;
@@ -457,9 +457,9 @@
   let editingId = null;
 
   /* ---------- Navigasi ---------- */
-  const VIEWS = ['ringkasan', 'kpi', 'talent'];
+  const VIEWS = ['summary', 'kpi', 'talent'];
   function showView(v) {
-    if (!VIEWS.includes(v)) v = 'ringkasan';
+    if (!VIEWS.includes(v)) v = 'summary';
     VIEWS.forEach(x => { $('view-' + x).hidden = x !== v; });
     document.querySelectorAll('nav a').forEach(a => { if (a.dataset.view === v) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
   }
@@ -473,7 +473,7 @@
   const hasChart = typeof window.Chart === 'function';   // carta dilangkau jika Chart.js gagal dimuatkan
   const seriesChart = hasChart ? new Chart($('seriesChart'), {
     type: 'bar',
-    data: { labels: ['Siri 1', 'Siri 2', 'Siri 3', 'Siri 4', 'Siri 5', 'Belum hadir'], datasets: [{ label: 'Peserta', data: [], borderRadius: 4, maxBarThickness: 44 }] },
+    data: { labels: ['Series 1', 'Series 2', 'Series 3', 'Series 4', 'Series 5', 'Not attended'], datasets: [{ label: 'Participants', data: [], borderRadius: 4, maxBarThickness: 44 }] },
     options: { animation: false, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: {} }, plugins: { legend: { display: false } } }
   }) : null;
   function themeChart(ch, colors) {
@@ -499,10 +499,10 @@
     const tpgV = pct(tpg, n), r = rating(tpgV), readyV = pct(ready, n);
     $('kTotal').textContent = n;
     $('kTpg').textContent = fmtPct(tpgV);
-    $('kTpgNote').textContent = `${tpg} daripada ${n} talent capai & disahkan`;
+    $('kTpgNote').textContent = `${tpg} of ${n} talent achieved & verified`;
     $('kRating').innerHTML = (n ? r : '-') + '<small> / 5</small>';
     $('kReady').textContent = fmtPct(readyV);
-    $('kReadyNote').textContent = `${ready} talent hanya menunggu Kirkpatrick L3`;
+    $('kReadyNote').textContent = `${ready} talent awaiting Kirkpatrick L3 only`;
     const cardCls = v => v >= .8 ? 'ok' : v >= .5 ? 'warn' : 'bad';
     setCard('kTpgCard', n ? cardCls(tpgV) : null);
     setCard('kRatingCard', n ? (r >= 4 ? 'ok' : r === 3 ? 'warn' : 'bad') : null);
@@ -510,10 +510,10 @@
 
     // Funnel L3
     const steps = [
-      ['1. Kehadiran AIL (Core 1)', talents.filter(t => t.idpAttendance).length],
-      ['2. SV Form dihantar', talents.filter(t => t.l3Sv).length],
-      ['3. Pembentangan selesai', talents.filter(t => t.l3Presentation).length],
-      ['4. HOD Form disahkan (akhir)', talents.filter(t => t.l3Hod).length]
+      ['1. AIL attendance (Core 1)', talents.filter(t => t.idpAttendance).length],
+      ['2. SV Form submitted', talents.filter(t => t.l3Sv).length],
+      ['3. Presentation completed', talents.filter(t => t.l3Presentation).length],
+      ['4. HOD Form endorsed (final)', talents.filter(t => t.l3Hod).length]
     ];
     $('funnel').innerHTML = steps.map(([label, c], i) => `
       <div class="bar-row">
@@ -522,15 +522,15 @@
         <span class="n">${c} <small>${fmtPct(pct(c, n))}</small></span>
       </div>`).join('');
     const gap = steps[2][1] - steps[3][1];
-    $('funnelNote').textContent = n ? `${gap} talent sudah membentang tetapi belum ada HOD Form. Ini halangan utama kepada TPG Index.` : '';
+    $('funnelNote').textContent = n ? `${gap} talent have presented but have no HOD Form yet. This is the main blocker for the TPG Index.` : '';
 
     // Penunjuk
     const ind = [
-      ['Borang status (Q2): Verified', talents.filter(verified).length],
-      ['Core 1: IDP Milestone (kehadiran AIL)', talents.filter(t => t.idpAttendance).length],
+      ['Status forms (Q2): Verified', talents.filter(verified).length],
+      ['Core 1: IDP Milestone (AIL attendance)', talents.filter(t => t.idpAttendance).length],
       ['Core 2 L3: SV Form', talents.filter(t => t.l3Sv).length],
-      ['Core 2 L3: Pembentangan', talents.filter(t => t.l3Presentation).length],
-      ['Core 2 L3: HOD Form (akhir)', talents.filter(t => t.l3Hod).length],
+      ['Core 2 L3: Presentation', talents.filter(t => t.l3Presentation).length],
+      ['Core 2 L3: HOD Form (final)', talents.filter(t => t.l3Hod).length],
       ['Stretch 1: Process Improvement', talents.filter(t => t.stretch1).length],
       ['Stretch 2: Stretch Role / Extra-Mile', talents.filter(t => t.stretch2).length]
     ];
@@ -546,7 +546,7 @@
     $('units').innerHTML = rows.map(([u, o]) => {
       const v = pct(o.tpg, o.total), r = rating(v), rv = pct(o.ready, o.total);
       return `<tr><td class="unit-name">${esc(titleCase(u))}</td><td class="num">${o.total}</td><td class="num">${o.tpg}</td><td class="num">${fmtPct(v)}</td><td class="c"><span class="rating pill ${ratingCls(r)}">${r}</span></td><td class="num">${fmtPct(rv)}</td></tr>`;
-    }).join('') + (n ? `<tr class="total"><td>Jumlah</td><td class="num">${n}</td><td class="num">${tpg}</td><td class="num">${fmtPct(tpgV)}</td><td class="c"><span class="rating pill ${ratingCls(r)}">${r}</span></td><td class="num">${fmtPct(readyV)}</td></tr>` : '');
+    }).join('') + (n ? `<tr class="total"><td>Total</td><td class="num">${n}</td><td class="num">${tpg}</td><td class="num">${fmtPct(tpgV)}</td><td class="c"><span class="rating pill ${ratingCls(r)}">${r}</span></td><td class="num">${fmtPct(readyV)}</td></tr>` : '');
 
     // Siri
     const s = [1, 2, 3, 4, 5].map(k => talents.filter(t => Number(t.series) === k).length);
@@ -556,17 +556,17 @@
     // Pembentangan terkini
     const pres = talents.filter(t => t.presentationDate).sort((a, b) => b.presentationDate.localeCompare(a.presentationDate)).slice(0, 8);
     $('presList').innerHTML = pres.length ? pres.map(t => `<tr><td class="sub" style="white-space:nowrap">${fmtDate(t.presentationDate)}</td><td><div class="who">${esc(titleCase(t.name))}</div><div class="sub">${esc(titleCase(unitOf(t)))}</div></td><td class="c">${tick(t.l3Presentation)}</td><td class="c">${tick(t.l3Hod)}</td></tr>`).join('')
-      : '<tr><td colspan="4" class="note">Tiada tarikh pembentangan direkodkan.</td></tr>';
+      : '<tr><td colspan="4" class="note">No presentation dates recorded.</td></tr>';
   }
 
   /* ---------- Senarai talent ---------- */
   function renderFilters() {
     const units = [...new Set(talents.map(unitOf))].sort();
     const cu = $('fUnit').value;
-    $('fUnit').innerHTML = '<option value="">Semua jabatan / bahagian</option>' + units.map(u => `<option value="${esc(u)}">${esc(titleCase(u))}</option>`).join('');
+    $('fUnit').innerHTML = '<option value="">All departments / divisions</option>' + units.map(u => `<option value="${esc(u)}">${esc(titleCase(u))}</option>`).join('');
     $('fUnit').value = cu;
     const cs = $('fSeries').value;
-    $('fSeries').innerHTML = '<option value="">Semua siri</option>' + [1, 2, 3, 4, 5].map(k => `<option value="${k}">Siri ${k}</option>`).join('') + '<option value="none">Belum hadir</option>';
+    $('fSeries').innerHTML = '<option value="">All series</option>' + [1, 2, 3, 4, 5].map(k => `<option value="${k}">Series ${k}</option>`).join('') + '<option value="none">Not attended</option>';
     $('fSeries').value = cs;
     $('jabList').innerHTML = [...new Set(talents.map(t => t.jabatan).filter(Boolean))].sort().map(v => `<option value="${esc(v)}">`).join('');
     $('bahList').innerHTML = [...new Set(talents.map(t => t.bahagian).filter(Boolean))].sort().map(v => `<option value="${esc(v)}">`).join('');
@@ -594,7 +594,7 @@
 
   function renderList() {
     const list = filtered();
-    $('countNote').textContent = talents.length ? `${list.length} daripada ${talents.length} talent` : '';
+    $('countNote').textContent = talents.length ? `${list.length} of ${talents.length} talent` : '';
     $('rows').innerHTML = list.map(t => {
       const [sl, sc] = stageOf(t);
       return `<tr data-id="${esc(t.id)}" tabindex="0">
@@ -611,13 +611,13 @@
     if (!talents.length) {
       empty.hidden = false;
       empty.innerHTML = mode === 'db'
-        ? `<strong>Belum ada talent</strong><span>Tambah talent pertama atau minta Claude import Master List ETP.</span>`
+        ? `<strong>No talent yet</strong><span>Add the first talent or ask Claude to import the ETP Master List.</span>`
         : mode === 'local'
-          ? `<strong>Belum ada data</strong><span>Pilih fail Master List ETP di bahagian atas untuk memaparkan senarai talent.</span>`
-          : `<strong>Sedang menyambung ke pangkalan data…</strong><span>Senarai talent akan dipaparkan di sini.</span>`;
+          ? `<strong>No data yet</strong><span>Choose the ETP Master List file at the top to show the talent list.</span>`
+          : `<strong>Connecting to the database…</strong><span>The talent list will appear here.</span>`;
     } else if (!list.length) {
       empty.hidden = false;
-      empty.innerHTML = '<strong>Tiada talent sepadan</strong><span>Cuba kata kunci lain atau kosongkan penapis.</span>';
+      empty.innerHTML = '<strong>No matching talent</strong><span>Try another keyword or clear the filters.</span>';
     } else empty.hidden = true;
   }
   ['q', 'fUnit', 'fSeries', 'fStage'].forEach(id => $(id).addEventListener('input', renderList));
@@ -625,7 +625,7 @@
   $('rows').addEventListener('keydown', e => { if (e.key === 'Enter') { const tr = e.target.closest('tr[data-id]'); if (tr) openForm(tr.dataset.id); } });
 
   /* ---------- Status KPI ---------- */
-  const TALENT_SCALE = { 5: 'Kedua-dua Core + kedua-dua Stretch', 4: '2 Core + 1 Stretch (sasaran)', 3: '2 Core sahaja', 2: 'Hanya 1 Core', 1: 'Tiada penunjuk Core' };
+  const TALENT_SCALE = { 5: 'Both Core + both Stretch', 4: '2 Core + 1 Stretch (target)', 3: '2 Core only', 2: 'Only 1 Core', 1: 'No Core indicator' };
 
   function renderKpi() {
     const n = talents.length;
@@ -633,14 +633,14 @@
     const tpg = talents.filter(isTpg).length, tpgV = pct(tpg, n), dr = rating(tpgV);
     const need = th => Math.max(0, Math.ceil(th * n - 1e-9) - tpg);
     $('kcDeptVal').innerHTML = n ? `${fmtPct(tpgV)} <small>· rating ${dr}</small>` : '-';
-    $('kcDeptNote').textContent = n ? (dr >= 4 ? 'Sasaran rating 4 dicapai' : `Perlu ${need(.65)} talent lagi untuk rating 4 (≥65%)`) : '';
+    $('kcDeptNote').textContent = n ? (dr >= 4 ? 'Rating 4 target met' : `${need(.65)} more talent needed for rating 4 (≥65%)`) : '';
     setCard('kcDept', n ? (dr >= 4 ? 'ok' : dr === 3 ? 'warn' : 'bad') : null);
 
     // Talent
     const dist = [5, 4, 3, 2, 1].map(r => ({ r, c: talents.filter(t => talentRating(t) === r).length }));
     const tOk = dist[0].c + dist[1].c;
     $('kcTalVal').innerHTML = n ? `${tOk} <small>/ ${n}</small>` : '-';
-    $('kcTalNote').textContent = n ? `${fmtPct(pct(tOk, n))} talent pada rating 4 atau 5` : '';
+    $('kcTalNote').textContent = n ? `${fmtPct(pct(tOk, n))} of talent at rating 4 or 5` : '';
     setCard('kcTal', n ? (pct(tOk, n) >= .8 ? 'ok' : pct(tOk, n) >= .5 ? 'warn' : 'bad') : null);
     const maxC = Math.max(1, ...dist.map(d => d.c));
     $('talentRatingBars').innerHTML = dist.map(d => `
@@ -657,8 +657,8 @@
     const bl = $('talentBlocker');
     if (n && below.length) {
       bl.hidden = false;
-      bl.innerHTML = `<b>${below.length} talent belum capai sasaran.</b> ${missL3} daripadanya hanya kurang <b>Core ii (Kirkpatrick L3)</b>: HOD Form belum disahkan` +
-        (missStretch ? `; ${missStretch} talent sudah lengkap Core tetapi tiada Stretch` : '') + (missMore ? `; ${missMore} talent lagi kurang lebih daripada satu penunjuk.` : '.') + ' Lihat tab Talent dengan tapisan "L3: belum HOD Form".';
+      bl.innerHTML = `<b>${below.length} talent have not met the target.</b> ${missL3} of them are missing only <b>Core ii (Kirkpatrick L3)</b>: the HOD Form is not yet endorsed` +
+        (missStretch ? `; ${missStretch} talent have both Core indicators but no Stretch` : '') + (missMore ? `; ${missMore} more talent are missing more than one indicator.` : '.') + ' See the Talent tab with the "L3: no HOD Form yet" filter.';
     } else bl.hidden = true;
 
     // Jabatan
@@ -669,7 +669,7 @@
     $('deptRows').innerHTML = rows.map(([u, o]) => {
       const v = pct(o.tpg, o.total), r = rating(v);
       return `<tr><td class="unit-name">${esc(titleCase(u))}</td><td class="num">${o.total}</td><td class="num">${o.tpg}</td><td class="num">${fmtPct(v)}</td><td class="c">${ratingChip(r)}</td><td class="num">${gap(o, .65)}</td><td class="num">${gap(o, .8)}</td></tr>`;
-    }).join('') + (n ? `<tr class="total"><td>Korporat</td><td class="num">${n}</td><td class="num">${tpg}</td><td class="num">${fmtPct(tpgV)}</td><td class="c">${ratingChip(dr)}</td><td class="num">${need(.65) || '<span class="tick y">✓</span>'}</td><td class="num">${need(.8) || '<span class="tick y">✓</span>'}</td></tr>` : '');
+    }).join('') + (n ? `<tr class="total"><td>Corporate</td><td class="num">${n}</td><td class="num">${tpg}</td><td class="num">${fmtPct(tpgV)}</td><td class="c">${ratingChip(dr)}</td><td class="num">${need(.65) || '<span class="tick y">✓</span>'}</td><td class="num">${need(.8) || '<span class="tick y">✓</span>'}</td></tr>` : '');
   }
 
   function renderAll() { renderSummary(); renderKpi(); renderFilters(); renderList(); }
@@ -689,57 +689,57 @@
     d.series = $('fSeriesIn').value ? Number($('fSeriesIn').value) : null;
     return d;
   }
-  function updateStagePill() { const f = readForm(), [l, c] = stageOf(f), r = talentRating(f); $('dlgStage').innerHTML = `<span class="pill ${c}">${l}</span> <span class="pill ${ratingCls(r)}">KPI talent: rating ${r}</span> <span class="note">${growthCount(f)}/4 penunjuk</span>`; }
+  function updateStagePill() { const f = readForm(), [l, c] = stageOf(f), r = talentRating(f); $('dlgStage').innerHTML = `<span class="pill ${c}">${l}</span> <span class="pill ${ratingCls(r)}">Talent KPI: rating ${r}</span> <span class="note">${growthCount(f)}/4 indicators</span>`; }
   $('form').addEventListener('input', updateStagePill);
 
   async function openForm(id) {
     editingId = id;
     const t = id ? talents.find(x => x.id === id) : null;
-    $('dlgTitle').textContent = t ? titleCase(t.name) : 'Tambah talent';
+    $('dlgTitle').textContent = t ? titleCase(t.name) : 'Add talent';
     for (const [k, el] of Object.entries(TXT)) { $(el).value = t ? (t[k] ?? '') : (DEFAULTS[k] || ''); $(el).disabled = !canWrite; }
     for (const [k, el] of Object.entries(CHK)) { $(el).checked = t ? !!t[k] : false; $(el).disabled = !canWrite; }
     $('fSeriesIn').value = t && t.series ? String(t.series) : ''; $('fSeriesIn').disabled = !canWrite;
     $('fStaffNo').readOnly = !!t;
     $('saveBtn').hidden = !canWrite;
     $('fError').hidden = true;
-    $('fMeta').textContent = t && t.source ? 'Sumber: ' + t.source : '';
-    $('delArea').innerHTML = t && canWrite ? '<button class="btn danger" type="button" id="delBtn">Padam</button>' : '';
+    $('fMeta').textContent = t && t.source ? 'Source: ' + t.source : '';
+    $('delArea').innerHTML = t && canWrite ? '<button class="btn danger" type="button" id="delBtn">Delete</button>' : '';
     if (t && canWrite) $('delBtn').onclick = askDelete;
     updateStagePill();
     $('dlg').showModal();
     if (t && t.updatedBy && userApi) {
-      try { const ps = await userApi.profiles([t.updatedBy]); $('fMeta').textContent = (t.source ? 'Sumber: ' + t.source + ' · ' : '') + `Dikemas kini oleh ${(ps[t.updatedBy] && ps[t.updatedBy].name) || 'seseorang'} pada ${fmtDate(new Date(t.updatedAt).toISOString().slice(0, 10))}`; } catch (_) {}
+      try { const ps = await userApi.profiles([t.updatedBy]); $('fMeta').textContent = (t.source ? 'Source: ' + t.source + ' · ' : '') + `Updated by ${(ps[t.updatedBy] && ps[t.updatedBy].name) || 'someone'} on ${fmtDate(new Date(t.updatedAt).toISOString().slice(0, 10))}`; } catch (_) {}
     }
   }
 
   function askDelete() {
-    $('delArea').innerHTML = '<span class="confirm">Padam talent ini? <button class="btn danger" type="button" id="delYes">Ya, padam</button><button class="btn" type="button" id="delNo">Tidak</button></span>';
-    $('delNo').onclick = () => { $('delArea').innerHTML = '<button class="btn danger" type="button" id="delBtn">Padam</button>'; $('delBtn').onclick = askDelete; };
+    $('delArea').innerHTML = '<span class="confirm">Delete this talent? <button class="btn danger" type="button" id="delYes">Yes, delete</button><button class="btn" type="button" id="delNo">No</button></span>';
+    $('delNo').onclick = () => { $('delArea').innerHTML = '<button class="btn danger" type="button" id="delBtn">Delete</button>'; $('delBtn').onclick = askDelete; };
     $('delYes').onclick = async () => {
-      try { await store.remove(editingId); $('dlg').close(); toast('Talent dipadam'); }
+      try { await store.remove(editingId); $('dlg').close(); toast('Talent deleted'); }
       catch (e) { showFormError(e); }
     };
   }
   function showFormError(e) {
     $('fError').hidden = false;
     $('fError').textContent = e && e.code === 'not_granted'
-      ? 'Anda hanya ada akses lihat. Minta pemilik portal beri akses sunting.'
-      : 'Tidak dapat simpan: ' + ((e && e.message) || 'ralat tidak diketahui') + '. Cuba lagi.';
+      ? 'You have view-only access. Ask the portal owner for edit access.'
+      : 'Could not save: ' + ((e && e.message) || 'unknown error') + '. Try again.';
   }
   $('cancelBtn').onclick = () => $('dlg').close();
   $('addBtn').onclick = () => openForm(null);
   $('form').addEventListener('submit', async e => {
     e.preventDefault();
-    if (!store) { showFormError({ message: 'data belum dimuatkan' }); return; }
+    if (!store) { showFormError({ message: 'data is not loaded yet' }); return; }
     const d = readForm();
-    if (!editingId && talents.some(t => t.id === d.staffNo)) { showFormError({ message: `no. staf ${d.staffNo} sudah wujud` }); return; }
+    if (!editingId && talents.some(t => t.id === d.staffNo)) { showFormError({ message: `staff no. ${d.staffNo} already exists` }); return; }
     d.updatedAt = Date.now(); d.updatedBy = myId;
     $('saveBtn').disabled = true;
     try {
       if (editingId) await store.update(editingId, d);
-      else await store.create(d.staffNo, { ...d, source: 'Ditambah melalui portal' });
+      else await store.create(d.staffNo, { ...d, source: 'Added via portal' });
       $('dlg').close();
-      toast(editingId ? 'Perubahan disimpan' : 'Talent ditambah');
+      toast(editingId ? 'Changes saved' : 'Talent added');
     } catch (err) { showFormError(err); }
     finally { $('saveBtn').disabled = false; }
   });
@@ -749,12 +749,12 @@
 
   /* ---------- CSV ---------- */
   $('csvBtn').onclick = async () => {
-    const cols = [['NO. STAF', 'staffNo'], ['NAMA', 'name'], ['EMEL', 'email'], ['JAWATAN', 'title'], ['JABATAN', 'jabatan'], ['BAHAGIAN', 'bahagian'], ['GRED', 'gred'], ['JANTINA', 'gender'],
-      ['PENYELIA', 'supervisor'], ['KETUA BAHAGIAN', 'ketuaBahagian'], ['KETUA JABATAN', 'ketuaJabatan'], ['FORMS Q2', 'formQ2'], ['FORMS Q3', 'formQ3'], ['FORMS Q4', 'formQ4'], ['STATUS INISIATIF', 'initiative'],
-      ['STRETCH 1', 'stretch1'], ['STRETCH 2', 'stretch2'], ['CORE 1 IDP', 'idpAttendance'], ['SIRI', 'series'], ['L3 SV FORM', 'l3Sv'], ['L3 PEMBENTANGAN', 'l3Presentation'], ['L3 HOD FORM', 'l3Hod'], ['TARIKH PEMBENTANGAN', 'presentationDate']];
+    const cols = [['STAFF NO', 'staffNo'], ['STAFF NAME', 'name'], ['EMAIL', 'email'], ['TITLE', 'title'], ['DEPARTMENT', 'jabatan'], ['DIVISION', 'bahagian'], ['GRADE', 'gred'], ['GENDER', 'gender'],
+      ['IMMEDIATE SUPERVISOR', 'supervisor'], ['HEAD OF DIVISION', 'ketuaBahagian'], ['HEAD OF DEPARTMENT', 'ketuaJabatan'], ['FORMS Q2', 'formQ2'], ['FORMS Q3', 'formQ3'], ['FORMS Q4', 'formQ4'], ['STATUS INITIATIVE', 'initiative'],
+      ['STRETCH 1', 'stretch1'], ['STRETCH 2', 'stretch2'], ['CORE 1 IDP', 'idpAttendance'], ['SERIES', 'series'], ['L3 SV FORM', 'l3Sv'], ['L3 PRESENTATION', 'l3Presentation'], ['L3 HOD FORM', 'l3Hod'], ['PRESENTATION DATE', 'presentationDate']];
     const cell = v => { const s = v === true ? 'Yes' : v === false ? 'No' : String(v ?? ''); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
     const list = filtered();
-    const csv = '﻿' + [cols.map(c => c[0]).concat('TAHAP', 'RATING KPI TALENT').join(',')].concat(list.map(t => cols.map(c => cell(t[c[1]])).concat(cell(stageOf(t)[0]), cell(talentRating(t))).join(','))).join('\r\n');
+    const csv = '﻿' + [cols.map(c => c[0]).concat('STAGE', 'TALENT KPI RATING').join(',')].concat(list.map(t => cols.map(c => cell(t[c[1]])).concat(cell(stageOf(t)[0]), cell(talentRating(t))).join(','))).join('\r\n');
     const filename = `ETP-2026-talent-${new Date().toISOString().slice(0, 10)}.csv`, blob = new Blob([csv], { type: 'text/csv' });
     if (!downloads) {
       // Di luar claude.ai (cth. GitHub Pages): muat turun biasa melalui pautan
@@ -763,7 +763,7 @@
       return;
     }
     try { await downloads.save({ filename, data: blob }); }
-    catch (e) { if (e && e.code !== 'cancelled' && e.code !== 'declined') toast('Muat turun tidak berjaya'); }
+    catch (e) { if (e && e.code !== 'cancelled' && e.code !== 'declined') toast('Download failed'); }
   };
 
   /* ---------- Sambungan data ---------- */
@@ -790,7 +790,7 @@
       renderAll();
     }, err => {
       $('dbBanner').hidden = false;
-      $('dbBanner').textContent = 'Tidak dapat memuatkan senarai talent (' + (err.message || err.code) + '). Muat semula halaman untuk cuba lagi.';
+      $('dbBanner').textContent = 'Could not load the talent list (' + (err.message || err.code) + '). Reload the page to try again.';
     });
     renderList();
     downloads = await window.claude.use('downloads');
@@ -805,7 +805,7 @@
   let local = null;   // { fileName, loadedAt, talents: {staffNo: data} }
 
   function persistLocal() {
-    if (!lsWrite(local)) toast('Perubahan hanya kekal sehingga halaman ditutup');
+    if (!lsWrite(local)) toast('Changes will only last until this page is closed');
     talents = Object.entries(local ? local.talents : {}).map(([id, d]) => ({ id, ...d })).sort((a, b) => String(a.name).localeCompare(String(b.name)));
     renderLocalBar(); renderAll();
   }
@@ -813,11 +813,11 @@
   function renderLocalBar() {
     $('localBar').hidden = false;
     const has = local && Object.keys(local.talents).length;
-    $('localTitle').textContent = has ? `${Object.keys(local.talents).length} talent dimuatkan daripada ${local.fileName}` : 'Muatkan Master List ETP';
+    $('localTitle').textContent = has ? `${Object.keys(local.talents).length} talent loaded from ${local.fileName}` : 'Load the ETP Master List';
     $('localNote').textContent = has
-      ? `Dimuatkan pada ${new Date(local.loadedAt).toLocaleString('ms-MY')}. Data dan suntingan disimpan dalam browser ini sahaja. Guna "Muat turun CSV" di tab Talent untuk simpan perubahan.`
-      : 'Pilih fail Excel Master List ETP (.xlsx) atau CSV yang dimuat turun dari portal ini. Fail dibaca dalam browser anda sahaja. Ia tidak dimuat naik atau dihantar ke mana-mana.';
-    $('fileLabel').textContent = has ? 'Muat fail lain…' : 'Pilih fail…';
+      ? `Loaded on ${new Date(local.loadedAt).toLocaleString('en-GB')}. Data and edits are stored in this browser only. Use "Download CSV" on the Talent tab to keep your changes.`
+      : 'Choose the ETP Master List Excel file (.xlsx) or a CSV downloaded from this portal. The file is read in your browser only. It is not uploaded or sent anywhere.';
+    $('fileLabel').textContent = has ? 'Load another file…' : 'Choose file…';
     $('fileLabel').classList.toggle('primary', !has);
     $('clearBtn').hidden = !has;
   }
@@ -840,7 +840,7 @@
     return xlsxReady || (xlsxReady = new Promise((ok, fail) => {
       const s = document.createElement('script');
       s.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
-      s.onload = ok; s.onerror = () => { xlsxReady = null; fail(new Error('Tidak dapat memuatkan pembaca Excel. Semak sambungan internet.')); };
+      s.onload = ok; s.onerror = () => { xlsxReady = null; fail(new Error('Could not load the Excel reader. Check your internet connection.')); };
       document.head.appendChild(s);
     }));
   }
@@ -848,13 +848,13 @@
   // Nama lajur dalam Master List ETP dan dalam CSV portal
   const COLS = {
     staffNo: ['STAFF NO', 'NO. STAF'], name: ['STAFF NAME', 'NAMA', 'NAMA PESERTA'], email: ['EMAIL', 'EMEL'], title: ['TITLE', 'JAWATAN'],
-    jabatan: ['JABATAN'], bahagian: ['BAHAGIAN'], gred: ['PERSON GRED', 'GRED'], gender: ['JANTINA'],
-    supervisor: ['IMMEDIATE SUPERVISOR', 'PENYELIA'], ketuaBahagian: ['KETUA BAHAGIAN'], ketuaJabatan: ['KETUA JABATAN'],
+    jabatan: ['JABATAN', 'DEPARTMENT'], bahagian: ['BAHAGIAN', 'DIVISION'], gred: ['PERSON GRED', 'GRED', 'GRADE'], gender: ['JANTINA', 'GENDER'],
+    supervisor: ['IMMEDIATE SUPERVISOR', 'PENYELIA'], ketuaBahagian: ['KETUA BAHAGIAN', 'HEAD OF DIVISION'], ketuaJabatan: ['KETUA JABATAN', 'HEAD OF DEPARTMENT'],
     formQ2: ['FORMS (Q2)', 'FORMS Q2'], formQ3: ['FORMS (Q3)', 'FORMS Q3'], formQ4: ['FORMS (Q4)', 'FORMS Q4'], initiative: ['STATUS INITIATIVE', 'STATUS INISIATIF'],
     stretch1: ['STRETCH 1 (PROCESS IMPROVEMENT)', 'STRETCH 1'], stretch2: ['STRETCH 2 (STRECTH ROLE)', 'STRETCH 2 (STRETCH ROLE)', 'STRETCH 2'],
-    idpAttendance: ['CORE 1 (IDP) ATTENDANCE', 'CORE 1 IDP'], series: ['CORE 1 (IDP) SERIES', 'SIRI'],
-    l3Sv: ['CORE 2 (LEVEL 3) SV FORM', 'L3 SV FORM'], l3Presentation: ['CORE 2 (LEVEL 3) PRESENTATION', 'L3 PEMBENTANGAN'], l3Hod: ['CORE 2 (LEVEL 3) HOD FORM', 'L3 HOD FORM'],
-    presentationDate: ['REMARK (DATE PRESENTATION)', 'TARIKH PEMBENTANGAN']
+    idpAttendance: ['CORE 1 (IDP) ATTENDANCE', 'CORE 1 IDP'], series: ['CORE 1 (IDP) SERIES', 'SIRI', 'SERIES'],
+    l3Sv: ['CORE 2 (LEVEL 3) SV FORM', 'L3 SV FORM'], l3Presentation: ['CORE 2 (LEVEL 3) PRESENTATION', 'L3 PEMBENTANGAN', 'L3 PRESENTATION'], l3Hod: ['CORE 2 (LEVEL 3) HOD FORM', 'L3 HOD FORM'],
+    presentationDate: ['REMARK (DATE PRESENTATION)', 'TARIKH PEMBENTANGAN', 'PRESENTATION DATE']
   };
   const BOOL = ['stretch1', 'stretch2', 'idpAttendance', 'l3Sv', 'l3Presentation', 'l3Hod'];
   const UPPER = ['jabatan', 'bahagian'];
@@ -887,17 +887,17 @@
       const r = sheetRows(wb.Sheets[n]); const h = findHeader(r);
       if (h >= 0 && r[h].map(normH).some(x => COLS.l3Hod.includes(x) || COLS.stretch1.includes(x))) { rows = r; hi = h; break; }
     }
-    if (!rows) throw new Error('Fail ini tiada sheet dengan lajur STAFF NO dan penunjuk ETP (contohnya sheet "Status Indicator").');
+    if (!rows) throw new Error('This file has no sheet with a STAFF NO column and ETP indicators (for example the "Status Indicator" sheet).');
     const header = rows[hi].map(normH);
     const idx = {};
     for (const [k, aliases] of Object.entries(COLS)) { const i = header.findIndex(h => aliases.includes(h)); if (i >= 0) idx[k] = i; }
-    if (idx.staffNo == null || idx.name == null) throw new Error('Lajur STAFF NO atau STAFF NAME tidak dijumpai.');
+    if (idx.staffNo == null || idx.name == null) throw new Error('The STAFF NO or STAFF NAME column was not found.');
 
     // Jantina daripada sheet SIRI 1-5 (jika ada)
     const gender = {};
     names.filter(n => /^siri\s*\d/i.test(n)).forEach(n => {
       const r = sheetRows(wb.Sheets[n]); const h = findHeader(r); if (h < 0) return;
-      const hh = r[h].map(normH), si = hh.findIndex(x => COLS.staffNo.includes(x)), gi = hh.indexOf('JANTINA');
+      const hh = r[h].map(normH), si = hh.findIndex(x => COLS.staffNo.includes(x)), gi = hh.findIndex(x => x === 'JANTINA' || x === 'GENDER');
       if (si < 0 || gi < 0) return;
       r.slice(h + 1).forEach(row => { const id = normH(row[si]); if (id && row[gi]) gender[id] = normH(row[gi]); });
     });
@@ -920,7 +920,7 @@
       d.source = fileName;
       out[id] = d;
     });
-    if (!Object.keys(out).length) throw new Error('Tiada baris talent dijumpai dalam fail ini.');
+    if (!Object.keys(out).length) throw new Error('No talent rows were found in this file.');
     return out;
   }
 
@@ -928,7 +928,7 @@
     const f = e.target.files && e.target.files[0]; e.target.value = '';
     if (!f) return;
     $('localError').hidden = true;
-    $('fileLabel').textContent = 'Membaca fail…';
+    $('fileLabel').textContent = 'Reading file…';
     try {
       await loadXlsx();
       const buf = await f.arrayBuffer();
@@ -936,10 +936,10 @@
       const parsed = parseWorkbook(wb, f.name);
       local = { fileName: f.name, loadedAt: Date.now(), talents: parsed };
       persistLocal();
-      toast(`${Object.keys(parsed).length} talent dimuatkan`);
+      toast(`${Object.keys(parsed).length} talent loaded`);
     } catch (err) {
       $('localError').hidden = false;
-      $('localError').textContent = 'Fail tidak dapat dibaca: ' + (err && err.message || err);
+      $('localError').textContent = 'The file could not be read: ' + (err && err.message || err);
       renderLocalBar();
     }
   });
@@ -947,11 +947,11 @@
   $('clearBtn').addEventListener('click', () => {
     $('clearBtn').hidden = true;
     const row = document.createElement('span'); row.className = 'confirm';
-    row.innerHTML = 'Buang semua data dari browser ini? <button class="btn danger" type="button">Ya, buang</button><button class="btn" type="button">Tidak</button>';
+    row.innerHTML = 'Remove all data from this browser? <button class="btn danger" type="button">Yes, remove</button><button class="btn" type="button">No</button>';
     $('clearBtn').after(row);
     const [yes, no] = row.querySelectorAll('button');
     no.onclick = () => { row.remove(); $('clearBtn').hidden = false; };
-    yes.onclick = () => { row.remove(); local = null; lsWrite(null); persistLocal(); toast('Data dibuang dari browser ini'); };
+    yes.onclick = () => { row.remove(); local = null; lsWrite(null); persistLocal(); toast('Data removed from this browser'); };
   });
 
   renderAll(); applyTheme();

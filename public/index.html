@@ -44,8 +44,8 @@
     padding-left: max(16px, env(safe-area-inset-left, 0px));
     padding-right: max(16px, env(safe-area-inset-right, 0px));
   }
-  .wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 16px; }
-  .stack { display: grid; gap: 16px; }
+  .wrap { max-width: 1180px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .stack { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
   h1 { font-size: 20px; font-weight: 600; margin: 0; text-wrap: balance; }
   h2 { font-size: 15px; font-weight: 600; margin: 0; text-wrap: balance; }
   button, input, select, textarea { font: inherit; color: inherit; }
@@ -57,6 +57,7 @@
   nav { display: flex; gap: 4px; background: var(--sunken); border: 1px solid var(--line); border-radius: 8px; padding: 3px; overflow-x: auto; }
   nav a { padding: 6px 12px; border-radius: 6px; color: var(--muted); text-decoration: none; font-weight: 500; white-space: nowrap; }
   nav a[aria-current="page"] { background: var(--surface); color: var(--fg); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+  @media (max-width: 560px) { nav { flex-wrap: wrap; } }
 
   .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; display: grid; gap: 12px; align-content: start; }
   .label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; font-weight: 500; }
@@ -222,6 +223,24 @@
   .ov-num { margin: 0; padding-left: 20px; display: grid; gap: 8px; line-height: 1.5; }
   .ov-quote { margin: 4px 0 0; text-align: center; font-size: 18px; font-weight: 600; display: grid; gap: 4px; text-wrap: balance; }
   .ov-quote span { font-size: 12px; font-weight: 400; color: var(--muted); }
+  /* Pending actions */
+  .act-cards { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+  @media (max-width: 1000px) { .act-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (max-width: 520px) { .act-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .act-card { min-width: 0; overflow-wrap: anywhere; text-align: left; border: 1px solid var(--line); border-left: 3px solid var(--line); border-radius: 8px; padding: 10px 12px; background: var(--surface); cursor: pointer; display: grid; gap: 2px; font: inherit; color: inherit; }
+  .act-card:hover { background: var(--sunken); }
+  .act-card[aria-pressed="true"] { background: var(--info-bg); border-color: var(--accent); }
+  .act-card.bad { border-left-color: var(--bad); } .act-card.warn { border-left-color: var(--warn); } .act-card.ok { border-left-color: var(--ok); }
+  .act-card .n { font-family: var(--mono); font-size: 24px; font-weight: 500; font-variant-numeric: tabular-nums; }
+  .act-card .t { font-weight: 600; font-size: 13px; }
+  .act-card .o { color: var(--muted); font-size: 12px; }
+  .act-scroll { max-height: 560px; overflow-y: auto; border: 1px solid var(--line); border-radius: 8px; }
+  .act-scroll thead th { position: sticky; top: 0; background: var(--surface); z-index: 1; box-shadow: inset 0 -1px 0 var(--line); }
+  #actRows tr { cursor: pointer; }
+  #actRows tr:hover { background: var(--sunken); }
+  .role { display: inline-block; font-size: 10px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+  .timing { white-space: nowrap; }
+  .owner-talents { color: var(--muted); font-size: 12px; }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
 
@@ -232,6 +251,7 @@
       <a href="#overview" data-view="overview">Overview</a>
       <a href="#summary" data-view="summary">Summary</a>
       <a href="#kpi" data-view="kpi">KPI Status</a>
+      <a href="#actions" data-view="actions">Pending Actions</a>
       <a href="#talent" data-view="talent">Talent</a>
     </nav>
   </div>
@@ -509,6 +529,47 @@
     </div>
   </section>
 
+  <!-- PENDING ACTIONS -->
+  <section id="view-actions" class="stack" hidden>
+    <div class="panel">
+      <div class="section-head">
+        <div><h2>Pending actions</h2><p>Every step still open for each talent to reach the KPI target (rating 4) and count towards the TPG Index. Click a card to filter the list, and click a row to update the talent.</p></div>
+        <span class="note" id="actTotal"></span>
+      </div>
+      <div class="act-cards" id="actCards"></div>
+    </div>
+
+    <div class="panel">
+      <div class="toolbar">
+        <input type="search" id="actQ" placeholder="Search talent, staff no., supervisor, HOD" aria-label="Search pending actions">
+        <select id="actType" aria-label="Filter by action"><option value="">All actions</option></select>
+        <select id="actRole" aria-label="Filter by owner"><option value="">All owners</option><option value="Talent">Talent</option><option value="Supervisor">Supervisor</option><option value="HOD">HOD</option><option value="GHCD">GHCD</option></select>
+        <select id="actUnit" aria-label="Filter by department or division"><option value="">All departments / divisions</option></select>
+        <select id="actSort" aria-label="Sort"><option value="urgent">Most urgent first</option><option value="unit">Department</option><option value="name">Talent name</option></select>
+        <button class="btn" id="actCsvBtn" type="button" hidden>Download CSV</button>
+      </div>
+      <div class="note" id="actCount"></div>
+      <div class="table-scroll act-scroll">
+        <table>
+          <thead><tr><th>Talent</th><th>Pending action</th><th>Owner</th><th>Timing</th></tr></thead>
+          <tbody id="actRows"></tbody>
+        </table>
+      </div>
+      <div id="actEmpty" class="empty" hidden></div>
+      <div class="note">Kirkpatrick L3 is assessed 60–90 days after AIL training. The L3 due date is the end of the talent’s AIL series plus 90 days.</div>
+    </div>
+
+    <div class="panel">
+      <div class="section-head"><div><h2>Follow-up by person</h2><p>Who to contact, and how many open actions each person holds. Matches the filters above.</p></div></div>
+      <div class="table-scroll act-scroll">
+        <table>
+          <thead><tr><th>Person</th><th>Role</th><th class="num">Open actions</th><th>Talent</th></tr></thead>
+          <tbody id="ownerRows"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
   <!-- TALENT -->
   <section id="view-talent" class="panel" hidden>
     <div class="toolbar">
@@ -635,7 +696,7 @@
   let editingId = null;
 
   /* ---------- Navigasi ---------- */
-  const VIEWS = ['overview', 'summary', 'kpi', 'talent'].filter(v => $('view-' + v));
+  const VIEWS = ['overview', 'summary', 'kpi', 'actions', 'talent'].filter(v => $('view-' + v));
   function showView(v) {
     if (v === 'ringkasan') v = 'summary';
     if (!VIEWS.includes(v)) v = VIEWS[0];
@@ -870,7 +931,134 @@
     $('ovNowNote').textContent = nowLabel;
   }
 
-  function renderAll() { renderOverview(); renderSummary(); renderKpi(); renderFilters(); renderList(); }
+  /* ---------- Pending actions ---------- */
+  // AIL series end dates (SIRI 1-5 sheets of the Master List); Kirkpatrick L3 window is 60-90 days after training
+  const SERIES_END = { 1: '2026-08-13', 2: '2026-08-20', 3: '2026-09-10', 4: '2026-09-16', 5: '2026-09-24' };
+  const DAY = 864e5;
+  const ACTIONS = [
+    { key: 'q2', title: 'Verify Q2 status form', role: 'HOD' },
+    { key: 'ail', title: 'Attend AIL programme (Core 1)', role: 'GHCD' },
+    { key: 'sv', title: 'Submit SV Form (L3)', role: 'Supervisor' },
+    { key: 'pres', title: 'Complete L3 presentation', role: 'Talent' },
+    { key: 'hod', title: 'Endorse HOD Form (L3)', role: 'HOD' },
+    { key: 'stretch', title: 'Complete a Stretch initiative', role: 'Talent' }
+  ];
+  const actionOf = k => ACTIONS.find(a => a.key === k);
+  const realName = v => v && !/^(kosong|-|n\/a|tiada)$/i.test(String(v).trim()) ? String(v).trim() : '';
+  const hodOf = t => realName(t.ketuaJabatan) || realName(t.ketuaBahagian);
+  const dayStart = d => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x.getTime(); };
+  const parseDay = s => s ? dayStart(s + 'T00:00:00') : null;
+
+  function l3Due(t) { const e = SERIES_END[Number(t.series)]; return e ? parseDay(e) + 90 * DAY : null; }
+
+  function pendingFor(t) {
+    const out = [], today = dayStart(Date.now()), due = l3Due(t);
+    const push = (key, extra) => { const a = actionOf(key); out.push({ t, key, title: a.title, role: a.role, ...extra }); };
+    const l3Timing = () => {
+      if (!due) return { timing: 'No AIL series recorded', level: 'warn', urgency: 0 };
+      const d = Math.round((due - today) / DAY);
+      return d < 0 ? { timing: `L3 overdue by ${-d} days`, level: 'bad', urgency: 1000 - d }
+        : { timing: `L3 due ${fmtDate(new Date(due).toISOString().slice(0, 10))} (${d} days)`, level: d <= 21 ? 'warn' : 'ok', urgency: 500 - d };
+    };
+    if (!verified(t)) push('q2', { owner: hodOf(t), timing: 'Status: ' + (t.formQ2 || 'Pending'), level: 'bad', urgency: 900 });
+    if (!t.idpAttendance) { push('ail', { owner: 'GHCD', timing: 'Not attended', level: 'bad', urgency: 800 }); }
+    else {
+    // Each open Kirkpatrick L3 step is listed on its own; HOD endorsement follows the presentation
+    if (!t.l3Sv) push('sv', { owner: realName(t.supervisor), ...l3Timing() });
+    if (!t.l3Presentation) {
+      const pd = parseDay(t.presentationDate);
+      if (pd && pd >= today) push('pres', { owner: titleCase(t.name), timing: `Scheduled ${fmtDate(t.presentationDate)}`, level: 'ok', urgency: 100 });
+      else push('pres', { owner: titleCase(t.name), ...l3Timing(), timing: (pd ? `Planned ${fmtDate(t.presentationDate)}, not recorded · ` : '') + l3Timing().timing });
+    } else if (!t.l3Hod) {
+      const pd = parseDay(t.presentationDate), waited = pd ? Math.round((today - pd) / DAY) : null;
+      push('hod', { owner: hodOf(t), timing: waited != null ? `Waiting ${waited} days since presentation` : 'Presented, awaiting endorsement',
+        level: waited == null ? 'warn' : waited > 14 ? 'bad' : 'warn', urgency: 600 + (waited || 0) });
+    }
+    }
+    if (!stretchOk(t)) push('stretch', { owner: titleCase(t.name), timing: 'No Stretch indicator yet', level: 'warn', urgency: 300 });
+    return out;
+  }
+
+  let actCardFilter = '';
+  function allActions() { return talents.flatMap(pendingFor); }
+  function filteredActions(list) {
+    const q = $('actQ').value.trim().toLowerCase(), ty = actCardFilter || $('actType').value, ro = $('actRole').value, u = $('actUnit').value;
+    return list.filter(a => (!ty || a.key === ty) && (!ro || a.role === ro) && (!u || unitOf(a.t) === u) &&
+      (!q || [a.t.name, a.t.staffNo, a.t.supervisor, a.t.ketuaJabatan, a.t.ketuaBahagian, a.owner].join(' ').toLowerCase().includes(q)));
+  }
+
+  function renderActions() {
+    const all = allActions();
+    const talentsOpen = new Set(all.map(a => a.t.id)).size;
+    $('actTotal').textContent = talents.length ? `${all.length} open actions across ${talentsOpen} talent` : '';
+    $('actCards').innerHTML = ACTIONS.map(a => {
+      const c = all.filter(x => x.key === a.key).length;
+      return `<button type="button" class="act-card ${c === 0 ? 'ok' : c >= 20 ? 'bad' : 'warn'}" data-key="${a.key}" aria-pressed="${actCardFilter === a.key}"><span class="n">${c}</span><span class="t">${a.title}</span><span class="o">Owner: ${a.role}</span></button>`;
+    }).join('');
+    const ct = $('actType').value;
+    $('actType').innerHTML = '<option value="">All actions</option>' + ACTIONS.map(a => `<option value="${a.key}">${a.title}</option>`).join('');
+    $('actType').value = ct;
+    const cu = $('actUnit').value, units = [...new Set(talents.map(unitOf))].sort();
+    $('actUnit').innerHTML = '<option value="">All departments / divisions</option>' + units.map(x => `<option value="${esc(x)}">${esc(titleCase(x))}</option>`).join('');
+    $('actUnit').value = cu;
+
+    const sort = $('actSort').value;
+    const list = filteredActions(all).sort((a, b) =>
+      sort === 'unit' ? unitOf(a.t).localeCompare(unitOf(b.t)) || b.urgency - a.urgency
+      : sort === 'name' ? String(a.t.name).localeCompare(String(b.t.name))
+      : b.urgency - a.urgency || String(a.t.name).localeCompare(String(b.t.name)));
+    $('actCount').textContent = all.length ? `${list.length} of ${all.length} actions` : '';
+    const lvl = l => l === 'bad' ? 'p-bad' : l === 'warn' ? 'p-warn' : 'p-ok';
+    $('actRows').innerHTML = list.map(a => `
+      <tr data-id="${esc(a.t.id)}" tabindex="0">
+        <td><div class="who">${esc(titleCase(a.t.name))}</div><div class="sub">${esc(a.t.staffNo)} · ${esc(titleCase(unitOf(a.t)))}</div></td>
+        <td>${esc(a.title)}</td>
+        <td><span class="role">${a.role}</span><div>${esc(a.role === 'GHCD' ? 'GHCD' : titleCase(a.owner) || 'Not recorded')}</div></td>
+        <td class="timing"><span class="pill ${lvl(a.level)}">${esc(a.timing)}</span></td>
+      </tr>`).join('');
+    const empty = $('actEmpty');
+    if (!talents.length) { empty.hidden = false; empty.innerHTML = '<strong>No data yet</strong><span>Load the talent data to see pending actions.</span>'; }
+    else if (!all.length) { empty.hidden = false; empty.innerHTML = '<strong>No pending actions</strong><span>Every talent has met the KPI target.</span>'; }
+    else if (!list.length) { empty.hidden = false; empty.innerHTML = '<strong>No matching actions</strong><span>Try another keyword or clear the filters.</span>'; }
+    else empty.hidden = true;
+
+    // Follow-up by person
+    const by = new Map();
+    list.forEach(a => {
+      const name = a.role === 'GHCD' ? 'GHCD' : (titleCase(a.owner) || 'Not recorded');
+      const k = a.role + '|' + name;
+      if (!by.has(k)) by.set(k, { name, role: a.role, items: [] });
+      by.get(k).items.push(a);
+    });
+    const owners = [...by.values()].sort((a, b) => b.items.length - a.items.length || a.name.localeCompare(b.name));
+    $('ownerRows').innerHTML = owners.map(o => {
+      const names = [...new Set(o.items.map(a => titleCase(a.t.name)))];
+      const shown = names.slice(0, 4).map(esc).join(', ') + (names.length > 4 ? ` +${names.length - 4} more` : '');
+      const kinds = [...new Set(o.items.map(a => a.title))].map(esc).join(' · ');
+      return `<tr><td><div class="who">${esc(o.name)}</div><div class="sub">${kinds}</div></td><td><span class="role">${o.role}</span></td><td class="num">${o.items.length}</td><td class="owner-talents">${o.role === 'Talent' ? '—' : shown}</td></tr>`;
+    }).join('') || '<tr><td colspan="4" class="note">No open actions.</td></tr>';
+  }
+
+  $('actCards').addEventListener('click', e => {
+    const b = e.target.closest('.act-card'); if (!b) return;
+    actCardFilter = actCardFilter === b.dataset.key ? '' : b.dataset.key;
+    $('actType').value = actCardFilter;
+    renderActions();
+  });
+  ['actQ', 'actRole', 'actUnit', 'actSort'].forEach(id => $(id).addEventListener('input', renderActions));
+  $('actType').addEventListener('input', () => { actCardFilter = $('actType').value; renderActions(); });
+  $('actRows').addEventListener('click', e => { const tr = e.target.closest('tr[data-id]'); if (tr) openForm(tr.dataset.id); });
+  $('actRows').addEventListener('keydown', e => { if (e.key === 'Enter') { const tr = e.target.closest('tr[data-id]'); if (tr) openForm(tr.dataset.id); } });
+
+  $('actCsvBtn').onclick = () => {
+    const cell = v => { const s = String(v ?? ''); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+    const rows = filteredActions(allActions()).map(a => [a.t.staffNo, titleCase(a.t.name), a.t.email, titleCase(unitOf(a.t)), a.title, a.role,
+      a.role === 'GHCD' ? 'GHCD' : titleCase(a.owner), titleCase(a.t.supervisor), titleCase(hodOf(a.t)), a.timing]);
+    const head = ['STAFF NO', 'STAFF NAME', 'EMAIL', 'DEPARTMENT / DIVISION', 'PENDING ACTION', 'OWNER ROLE', 'OWNER', 'IMMEDIATE SUPERVISOR', 'HOD', 'TIMING'];
+    saveCsv(`ETP-2026-pending-actions-${new Date().toISOString().slice(0, 10)}.csv`, '﻿' + [head, ...rows].map(r => r.map(cell).join(',')).join('\r\n'));
+  };
+
+  function renderAll() { renderOverview(); renderSummary(); renderKpi(); renderActions(); renderFilters(); renderList(); }
 
   /* ---------- Borang ---------- */
   const TXT = { staffNo: 'fStaffNo', gred: 'fGred', name: 'fName', title: 'fTitle', jabatan: 'fJabatan', bahagian: 'fBahagian', email: 'fEmail', gender: 'fGender', supervisor: 'fSupervisor', ketuaBahagian: 'fKB', ketuaJabatan: 'fKJ', formQ2: 'fQ2', formQ3: 'fQ3', formQ4: 'fQ4', initiative: 'fInit', presentationDate: 'fPresDate' };
@@ -953,7 +1141,11 @@
     const cell = v => { const s = v === true ? 'Yes' : v === false ? 'No' : String(v ?? ''); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
     const list = filtered();
     const csv = '﻿' + [cols.map(c => c[0]).concat('STAGE', 'TALENT KPI RATING').join(',')].concat(list.map(t => cols.map(c => cell(t[c[1]])).concat(cell(stageOf(t)[0]), cell(talentRating(t))).join(','))).join('\r\n');
-    const filename = `ETP-2026-talent-${new Date().toISOString().slice(0, 10)}.csv`, blob = new Blob([csv], { type: 'text/csv' });
+    saveCsv(`ETP-2026-talent-${new Date().toISOString().slice(0, 10)}.csv`, csv);
+  };
+
+  async function saveCsv(filename, csv) {
+    const blob = new Blob([csv], { type: 'text/csv' });
     if (!downloads) {
       // Di luar claude.ai (cth. GitHub Pages): muat turun biasa melalui pautan
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename;
@@ -962,7 +1154,7 @@
     }
     try { await downloads.save({ filename, data: blob }); }
     catch (e) { if (e && e.code !== 'cancelled' && e.code !== 'declined') toast('Download failed'); }
-  };
+  }
 
   /* ---------- Sambungan data ---------- */
   async function connect() {
@@ -992,7 +1184,7 @@
     });
     renderList();
     downloads = await window.claude.use('downloads');
-    $('csvBtn').hidden = !downloads;
+    $('csvBtn').hidden = !downloads; $('actCsvBtn').hidden = !downloads;
   }
 
   /* ---------- Mod fail tempatan (GitHub Pages / fail disimpan) ----------
@@ -1022,7 +1214,7 @@
 
   function enterLocalMode() {
     mode = 'local'; canWrite = true; downloads = null;
-    $('addBtn').hidden = false; $('csvBtn').hidden = false;
+    $('addBtn').hidden = false; $('csvBtn').hidden = false; $('actCsvBtn').hidden = false;
     store = {
       update: async (id, d) => { local.talents[id] = { ...local.talents[id], ...d }; persistLocal(); },
       create: async (id, d) => { if (!local) local = { fileName: 'portal', loadedAt: Date.now(), talents: {} }; local.talents[id] = d; persistLocal(); },

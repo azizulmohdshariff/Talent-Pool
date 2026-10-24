@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+</head>
+<body>
+<title>Talent Pool Portal</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  /* Layout: bar navigasi atas (Ringkasan / Talent / Monitor sistem); ringkasan KPI dahulu, kemudian funnel L3, penunjuk dan jadual unit */
+  :root {
+    --bg: #f3f5f8; --surface: #ffffff; --sunken: #eef1f5; --line: #dde3ea; --fg: #17202b; --muted: #5d6b7c;
+    --accent: #2563c9; --accent-fg: #ffffff; --accent2: #0f8a7e;
+    --ok: #16803c; --warn: #b26a00; --bad: #c62828;
+    --ok-bg: #e3f4e8; --warn-bg: #fdf0dc; --bad-bg: #fbe4e4; --info-bg: #e4ecfa; --mute-bg: #eceff3;
+    --font: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    --bg: #0e141b; --surface: #17202b; --sunken: #121a23; --line: #273342; --fg: #e4eaf1; --muted: #92a1b3;
+    --accent: #6ea4ff; --accent-fg: #0b1420; --accent2: #3cc7b6;
+    --ok: #4ccd78; --warn: #f0a93b; --bad: #ff6b6b;
+    --ok-bg: #133222; --warn-bg: #3a2a10; --bad-bg: #3d1616; --info-bg: #182a47; --mute-bg: #222c38;
+    color-scheme: dark;
+  } }
+  :root[data-theme="dark"] {
+    --bg: #0e141b; --surface: #17202b; --sunken: #121a23; --line: #273342; --fg: #e4eaf1; --muted: #92a1b3;
+    --accent: #6ea4ff; --accent-fg: #0b1420; --accent2: #3cc7b6;
+    --ok: #4ccd78; --warn: #f0a93b; --bad: #ff6b6b;
+    --ok-bg: #133222; --warn-bg: #3a2a10; --bad-bg: #3d1616; --info-bg: #182a47; --mute-bg: #222c38;
+    color-scheme: dark;
+  }
+
+  body {
+    background: var(--bg); color: var(--fg); font-family: var(--font); font-size: 14px;
+    padding-block: 20px 32px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 16px; }
+  .stack { display: grid; gap: 16px; }
+  h1 { font-size: 20px; font-weight: 600; margin: 0; text-wrap: balance; }
+  h2 { font-size: 15px; font-weight: 600; margin: 0; text-wrap: balance; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .brand { display: grid; gap: 2px; }
+  .brand small { color: var(--muted); }
+  nav { display: flex; gap: 4px; background: var(--sunken); border: 1px solid var(--line); border-radius: 8px; padding: 3px; overflow-x: auto; }
+  nav a { padding: 6px 12px; border-radius: 6px; color: var(--muted); text-decoration: none; font-weight: 500; white-space: nowrap; }
+  nav a[aria-current="page"] { background: var(--surface); color: var(--fg); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; display: grid; gap: 12px; align-content: start; }
+  .label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; font-weight: 500; }
+  .note { color: var(--muted); font-size: 12px; }
+  .banner { background: var(--warn-bg); color: var(--warn); border-radius: 8px; padding: 10px 12px; font-size: 13px; }
+  .formula { font-size: 12px; color: var(--muted); background: var(--sunken); border-radius: 8px; padding: 10px 12px; line-height: 1.5; }
+
+  .btn { border: 1px solid var(--line); background: var(--surface); padding: 7px 12px; border-radius: 7px; cursor: pointer; font-weight: 500; }
+  .btn:hover { background: var(--sunken); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+  .btn.primary:hover { filter: brightness(1.08); background: var(--accent); }
+  .btn.danger { color: var(--bad); }
+  .btn[disabled] { opacity: .5; cursor: not-allowed; }
+
+  /* KPI */
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  @media (max-width: 760px) { .kpis { grid-template-columns: repeat(2, 1fr); } }
+  .kpi { border-left: 3px solid var(--line); gap: 4px; }
+  .kpi.accent { border-left-color: var(--accent); } .kpi.ok { border-left-color: var(--ok); } .kpi.warn { border-left-color: var(--warn); } .kpi.bad { border-left-color: var(--bad); }
+  .kpi .value { font-family: var(--mono); font-size: 28px; font-weight: 500; font-variant-numeric: tabular-nums; }
+  .kpi .value small { font-size: 14px; color: var(--muted); }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 860px) { .grid2 { grid-template-columns: 1fr; } }
+
+  /* Funnel & bar */
+  .bars { display: grid; gap: 10px; }
+  .bar-row { display: grid; grid-template-columns: minmax(120px, 190px) 1fr 76px; gap: 10px; align-items: center; }
+  .bar-row .name { min-width: 0; }
+  .bar-track { background: var(--sunken); border-radius: 4px; height: 12px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; background: var(--accent); min-width: 2px; }
+  .bar-row .n { font-family: var(--mono); text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .bar-row .n small { color: var(--muted); }
+  @media (max-width: 480px) { .bar-row { grid-template-columns: 1fr 64px; } .bar-row .bar-track { grid-column: 1 / -1; grid-row: 2; } }
+  .chart-box { position: relative; height: 200px; }
+
+  /* Pill & chip */
+  .pill { display: inline-block; font-size: 11px; font-weight: 600; letter-spacing: .03em; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+  .p-ok { color: var(--ok); background: var(--ok-bg); }
+  .p-warn { color: var(--warn); background: var(--warn-bg); }
+  .p-bad { color: var(--bad); background: var(--bad-bg); }
+  .p-info { color: var(--accent); background: var(--info-bg); }
+  .p-mute { color: var(--muted); background: var(--mute-bg); }
+  .rating { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 6px; font-family: var(--mono); font-weight: 500; }
+
+  /* Jadual */
+  .table-scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 9px 6px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  th { color: var(--muted); font-weight: 500; font-size: 12px; white-space: nowrap; }
+  td.num, th.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  th.num { font-family: var(--font); }
+  td.c, th.c { text-align: center; }
+  tr.total td { font-weight: 600; border-top: 2px solid var(--line); }
+  #rows tr { cursor: pointer; }
+  #rows tr:hover { background: var(--sunken); }
+  .who { font-weight: 500; }
+  .sub { color: var(--muted); font-size: 12px; }
+  .tick { font-family: var(--mono); font-weight: 600; }
+  .tick.y { color: var(--ok); } .tick.n { color: var(--bad); opacity: .75; }
+  .unit-name { max-width: 320px; }
+
+  .toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .toolbar input[type=search] { flex: 1 1 220px; min-width: 0; }
+  input, select, textarea { background: var(--surface); border: 1px solid var(--line); border-radius: 7px; padding: 7px 10px; max-width: 100%; }
+  .toolbar select { max-width: 260px; }
+
+  .empty { text-align: center; padding: 32px 12px; display: grid; gap: 10px; justify-items: center; color: var(--muted); }
+  .empty strong { color: var(--fg); font-size: 15px; }
+
+  /* Dialog */
+  dialog { border: 1px solid var(--line); border-radius: 12px; padding: 0; width: min(640px, calc(100vw - 32px)); max-height: calc(100vh - 32px); background: var(--surface); color: var(--fg); }
+  dialog::backdrop { background: rgba(10, 16, 24, .45); }
+  form.card { display: grid; gap: 14px; padding: 18px; }
+  fieldset { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px 12px; margin: 0; display: grid; gap: 10px; min-width: 0; }
+  legend { font-size: 12px; font-weight: 600; color: var(--muted); padding: 0 4px; }
+  .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .fields .full { grid-column: 1 / -1; }
+  @media (max-width: 540px) { .fields { grid-template-columns: 1fr; } }
+  .field { display: grid; gap: 4px; min-width: 0; }
+  .field label { font-size: 12px; color: var(--muted); font-weight: 500; }
+  .checks { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; }
+  @media (max-width: 540px) { .checks { grid-template-columns: 1fr; } }
+  .checks label { display: flex; gap: 8px; align-items: center; cursor: pointer; }
+  .checks input { width: 16px; height: 16px; accent-color: var(--accent); }
+  .actions { display: flex; gap: 8px; justify-content: space-between; flex-wrap: wrap; }
+  .actions .right { display: flex; gap: 8px; margin-left: auto; }
+  .confirm { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; color: var(--bad); }
+  .error { color: var(--bad); font-size: 13px; }
+  .statusline { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+  .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); background: var(--fg); color: var(--bg); padding: 8px 14px; border-radius: 8px; font-size: 13px; z-index: 20; }
+
+  /* Monitor */
+  .live::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--ok); margin-right: 6px; vertical-align: 1px; }
+  .m-kpi.ok { border-left-color: var(--ok); } .m-kpi.warn { border-left-color: var(--warn); } .m-kpi.bad { border-left-color: var(--bad); }
+  .grid-wide { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
+  @media (max-width: 860px) { .grid-wide { grid-template-columns: 1fr; } }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+
+<div class="wrap">
+  <div class="top">
+    <div class="brand"><h1>Talent Pool Portal</h1><small>Emerging Talent Program (ETP) 2026 · KPI 10 Talent Pool Growth Index <span id="whoami"></span></small></div>
+    <nav aria-label="Bahagian portal">
+      <a href="#ringkasan" data-view="ringkasan">Ringkasan</a>
+      <a href="#talent" data-view="talent">Talent</a>
+      <a href="#monitor" data-view="monitor">Monitor sistem</a>
+    </nav>
+  </div>
+
+  <div class="banner" id="dbBanner" hidden></div>
+
+  <!-- RINGKASAN -->
+  <section id="view-ringkasan" class="stack">
+    <div class="kpis">
+      <div class="panel kpi accent"><div class="label">Jumlah talent</div><div class="value" id="kTotal">0</div><div class="note">dikenal pasti dalam ETP 2026</div></div>
+      <div class="panel kpi" id="kTpgCard"><div class="label">TPG Index rasmi</div><div class="value" id="kTpg">0%</div><div class="note" id="kTpgNote">0 talent capai &amp; disahkan</div></div>
+      <div class="panel kpi" id="kRatingCard"><div class="label">Rating keseluruhan</div><div class="value" id="kRating">-<small> / 5</small></div><div class="note">≥80%=5 · ≥65%=4 · ≥50%=3 · ≥40%=2</div></div>
+      <div class="panel kpi" id="kReadyCard"><div class="label">Readiness</div><div class="value" id="kReady">0%</div><div class="note" id="kReadyNote">hanya menunggu Kirkpatrick L3</div></div>
+    </div>
+
+    <div class="grid2">
+      <div class="panel">
+        <div class="label">Rantaian pengesahan Kirkpatrick L3</div>
+        <div class="bars" id="funnel"></div>
+        <div class="note" id="funnelNote"></div>
+      </div>
+      <div class="panel">
+        <div class="label">Pencapaian penunjuk Core &amp; Stretch</div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Penunjuk</th><th class="num">Selesai</th><th class="num">%</th><th>Status</th></tr></thead>
+            <tbody id="indicators"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="label">TPG Index mengikut jabatan / bahagian</div>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Jabatan / bahagian</th><th class="num">Talent</th><th class="num">Capai &amp; disahkan</th><th class="num">TPG Index</th><th class="c">Rating</th><th class="num">Readiness</th></tr></thead>
+          <tbody id="units"></tbody>
+        </table>
+      </div>
+      <div class="formula">TPG Index = talent yang capai <b>kedua-dua Core</b> (IDP Milestone + Kirkpatrick L3: SV Form, Pembentangan, HOD Form) <b>dan ≥1 Stretch</b>, berstatus Verified ÷ jumlah talent. Readiness ialah metrik tambahan (bukan rating rasmi): talent Verified yang sudah selesai IDP dan ≥1 Stretch, dan hanya menunggu penilaian L3. Pejabat PUK/KPE dipecahkan mengikut bahagian.</div>
+    </div>
+
+    <div class="grid2">
+      <div class="panel">
+        <div class="label">Kehadiran program AIL mengikut siri</div>
+        <div class="chart-box"><canvas id="seriesChart" aria-label="Carta bilangan peserta mengikut siri"></canvas></div>
+      </div>
+      <div class="panel">
+        <div class="label">Pembentangan L3 terkini</div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Tarikh</th><th>Talent</th><th class="c">Bentang</th><th class="c">HOD</th></tr></thead>
+            <tbody id="presList"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TALENT -->
+  <section id="view-talent" class="panel" hidden>
+    <div class="toolbar">
+      <input type="search" id="q" placeholder="Cari nama, no. staf, jawatan, penyelia" aria-label="Cari talent">
+      <select id="fUnit" aria-label="Tapis jabatan atau bahagian"><option value="">Semua jabatan / bahagian</option></select>
+      <select id="fSeries" aria-label="Tapis siri"><option value="">Semua siri</option></select>
+      <select id="fStage" aria-label="Tapis tahap">
+        <option value="">Semua tahap</option>
+        <option value="tpg">Capai TPG</option>
+        <option value="ready">Menunggu L3 sahaja</option>
+        <option value="notready">Belum sedia</option>
+        <option value="nosv">L3: belum SV Form</option>
+        <option value="nopres">L3: belum bentang</option>
+        <option value="nohod">L3: belum HOD Form</option>
+      </select>
+      <button class="btn" id="csvBtn" type="button" hidden>Muat turun CSV</button>
+      <button class="btn primary" id="addBtn" type="button">+ Tambah talent</button>
+    </div>
+    <div class="note" id="countNote"></div>
+    <div class="table-scroll">
+      <table>
+        <thead><tr>
+          <th>Talent</th><th>Jabatan / bahagian</th><th>Gred</th><th class="c">Siri</th>
+          <th class="c" title="Forms Q2 Verified">Q2</th><th class="c" title="Stretch 1: Process Improvement">S1</th><th class="c" title="Stretch 2: Stretch Role">S2</th>
+          <th class="c" title="Core 1: IDP Attendance">IDP</th><th class="c" title="Core 2 L3: SV Form">SV</th><th class="c" title="Core 2 L3: Pembentangan">Bentang</th><th class="c" title="Core 2 L3: HOD Form">HOD</th>
+          <th>Tahap</th>
+        </tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <div id="emptyList" class="empty" hidden></div>
+    <div class="note">Q2 = Forms Q2 Verified · S1/S2 = Stretch 1/2 · IDP = Core 1 kehadiran AIL · SV, Bentang, HOD = Core 2 Kirkpatrick L3. Klik baris untuk kemas kini.</div>
+  </section>
+
+  <!-- MONITOR -->
+  <section id="view-monitor" class="stack" hidden>
+    <div class="top">
+      <span class="note">Data contoh. Sambungkan ke API pelayan sebenar untuk angka sebenar.</span>
+      <span class="note live">Kemas kini <span id="mUpdate">-</span></span>
+    </div>
+    <div class="kpis">
+      <div class="panel kpi m-kpi" id="mk-cpu"><div class="label">CPU</div><div class="value" id="m-cpu">-</div><div class="note">amaran &gt; 70%</div></div>
+      <div class="panel kpi m-kpi" id="mk-mem"><div class="label">Memori</div><div class="value" id="m-mem">-</div><div class="note">amaran &gt; 75%</div></div>
+      <div class="panel kpi m-kpi" id="mk-rpm"><div class="label">Request / min</div><div class="value" id="m-rpm">-</div><div class="note">trafik masuk</div></div>
+      <div class="panel kpi m-kpi" id="mk-err"><div class="label">Ralat (5xx)</div><div class="value" id="m-err">-</div><div class="note">amaran &gt; 5</div></div>
+    </div>
+    <div class="grid-wide">
+      <div class="panel"><div class="label">CPU &amp; memori (%)</div><div class="chart-box"><canvas id="mChart" aria-label="Carta CPU dan memori"></canvas></div></div>
+      <div class="panel"><div class="label">Status servis</div>
+        <div class="table-scroll"><table><thead><tr><th>Servis</th><th>Status</th><th class="num">Latency</th></tr></thead><tbody id="mServices"></tbody></table></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<dialog id="dlg" aria-labelledby="dlgTitle">
+  <form class="card" id="form" method="dialog">
+    <div class="statusline"><h2 id="dlgTitle">Tambah talent</h2><span id="dlgStage"></span></div>
+    <fieldset>
+      <legend>Maklumat staf</legend>
+      <div class="fields">
+        <div class="field"><label for="fStaffNo">No. staf *</label><input id="fStaffNo" required maxlength="20" pattern="[A-Za-z0-9_\-]+" placeholder="cth. KT1234"></div>
+        <div class="field"><label for="fGred">Gred</label><input id="fGred" maxlength="10" placeholder="cth. TH5"></div>
+        <div class="field full"><label for="fName">Nama *</label><input id="fName" required maxlength="160"></div>
+        <div class="field full"><label for="fTitle">Jawatan</label><input id="fTitle" maxlength="160"></div>
+        <div class="field full"><label for="fJabatan">Jabatan *</label><input id="fJabatan" required maxlength="160" list="jabList"></div>
+        <div class="field full"><label for="fBahagian">Bahagian</label><input id="fBahagian" maxlength="160" list="bahList"></div>
+        <div class="field"><label for="fEmail">Emel</label><input id="fEmail" type="email" maxlength="160"></div>
+        <div class="field"><label for="fGender">Jantina</label><select id="fGender"><option value="">-</option><option value="P">Perempuan</option><option value="L">Lelaki</option></select></div>
+        <div class="field"><label for="fSupervisor">Penyelia terus</label><input id="fSupervisor" maxlength="160"></div>
+        <div class="field"><label for="fKB">Ketua bahagian</label><input id="fKB" maxlength="160"></div>
+        <div class="field full"><label for="fKJ">Ketua jabatan</label><input id="fKJ" maxlength="160"></div>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Borang &amp; inisiatif</legend>
+      <div class="fields">
+        <div class="field"><label for="fQ2">Forms Q2</label><select id="fQ2"><option>Verified</option><option>Pending</option></select></div>
+        <div class="field"><label for="fQ3">Forms Q3</label><select id="fQ3"><option>Verified</option><option>Pending</option></select></div>
+        <div class="field"><label for="fQ4">Forms Q4</label><select id="fQ4"><option>Verified</option><option>Pending</option></select></div>
+        <div class="field"><label for="fInit">Status inisiatif</label><select id="fInit"><option>In Progress</option><option>Completed</option><option>Not Started</option></select></div>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Penunjuk Core &amp; Stretch</legend>
+      <div class="checks">
+        <label><input type="checkbox" id="fS1"> Stretch 1: Process Improvement</label>
+        <label><input type="checkbox" id="fS2"> Stretch 2: Stretch Role</label>
+        <label><input type="checkbox" id="fIdp"> Core 1: Kehadiran IDP (AIL)</label>
+        <div class="field"><label for="fSeriesIn">Siri AIL</label><select id="fSeriesIn"><option value="">-</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></div>
+        <label><input type="checkbox" id="fSv"> Core 2 L3: SV Form</label>
+        <label><input type="checkbox" id="fPres"> Core 2 L3: Pembentangan</label>
+        <label><input type="checkbox" id="fHod"> Core 2 L3: HOD Form (akhir)</label>
+        <div class="field"><label for="fPresDate">Tarikh pembentangan</label><input type="date" id="fPresDate"></div>
+      </div>
+    </fieldset>
+    <div class="note" id="fMeta"></div>
+    <div class="error" id="fError" hidden></div>
+    <div class="actions">
+      <div id="delArea"></div>
+      <div class="right">
+        <button class="btn" type="button" id="cancelBtn">Batal</button>
+        <button class="btn primary" type="submit" id="saveBtn">Simpan</button>
+      </div>
+    </div>
+  </form>
+</dialog>
+<datalist id="jabList"></datalist><datalist id="bahList"></datalist>
+
+<div class="toast" id="toast" hidden></div>
+
+<script>
+  const $ = id => document.getElementById(id);
+  const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const pct = (a, b) => b ? a / b : 0;
+  const fmtPct = v => (Math.round(v * 1000) / 10).toLocaleString('ms-MY', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%';
+  const fmtDate = s => s ? new Date(s + (s.length === 10 ? 'T00:00:00' : '')).toLocaleDateString('ms-MY', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
+  const tick = v => v ? '<span class="tick y" aria-label="Ya">✓</span>' : '<span class="tick n" aria-label="Tidak">✗</span>';
+
+  /* ---------- Peraturan KPI (ikut Master List ETP) ---------- */
+  const verified = t => t.formQ2 === 'Verified';
+  const stretchOk = t => !!(t.stretch1 || t.stretch2);
+  const isTpg = t => verified(t) && t.idpAttendance && t.l3Sv && t.l3Presentation && t.l3Hod && stretchOk(t);
+  const isReady = t => verified(t) && t.idpAttendance && stretchOk(t);
+  const rating = v => v >= .8 ? 5 : v >= .65 ? 4 : v >= .5 ? 3 : v >= .4 ? 2 : 1;
+  const ratingCls = r => r >= 4 ? 'p-ok' : r === 3 ? 'p-warn' : 'p-bad';
+  const band = v => v >= .8 ? ['Baik', 'p-ok'] : v >= .5 ? ['Sederhana', 'p-warn'] : ['Perlu tindakan', 'p-bad'];
+  const PUK = 'PEJABAT PUK/KPE';
+  const unitOf = t => (t.jabatan === PUK && t.bahagian && t.bahagian !== 'PEJABAT PENGARAH URUSAN KUMPULAN DAN KETUA PEGAWAI EKSEKUTIF') ? t.bahagian : (t.jabatan || '-');
+  const stageOf = t => isTpg(t) ? ['Capai TPG', 'p-ok'] : isReady(t) ? ['Menunggu L3', 'p-info'] : ['Belum sedia', 'p-bad'];
+  const titleCase = s => String(s || '').toLowerCase().replace(/(^|[\s(\/&-])(\p{L})/gu, (m, a, b) => a + b.toUpperCase()).replace(/\bDan\b/g, 'dan').replace(/\bBin\b/g, 'bin').replace(/\bBinti\b/g, 'binti').replace(/\bBte\b/g, 'bte').replace(/\bPuk\/Kpe\b/g, 'PUK/KPE');
+
+  let db = null, userApi = null, downloads = null, myId = null, canWrite = true;
+  let talents = [];
+  let editingId = null;
+
+  /* ---------- Navigasi ---------- */
+  const VIEWS = ['ringkasan', 'talent', 'monitor'];
+  function showView(v) {
+    if (!VIEWS.includes(v)) v = 'ringkasan';
+    VIEWS.forEach(x => { $('view-' + x).hidden = x !== v; });
+    document.querySelectorAll('nav a').forEach(a => { if (a.dataset.view === v) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+    if (v === 'monitor') startMonitor();
+  }
+  document.querySelectorAll('nav a').forEach(a => a.addEventListener('click', e => {
+    e.preventDefault(); const v = a.dataset.view;
+    try { history.replaceState(null, '', '#' + v); } catch (_) {}
+    showView(v);
+  }));
+  showView(location.hash.slice(1));
+
+  /* ---------- Carta siri ---------- */
+  const seriesChart = new Chart($('seriesChart'), {
+    type: 'bar',
+    data: { labels: ['Siri 1', 'Siri 2', 'Siri 3', 'Siri 4', 'Siri 5', 'Belum hadir'], datasets: [{ label: 'Peserta', data: [], borderRadius: 4, maxBarThickness: 44 }] },
+    options: { animation: false, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: {} }, plugins: { legend: { display: false } } }
+  });
+  function themeChart(ch, colors) {
+    const fg = css('--muted'), line = css('--line');
+    ch.data.datasets.forEach((d, i) => { d.borderColor = colors[i]; d.backgroundColor = d.fill ? colors[i] + '22' : colors[i]; });
+    for (const ax of ['x', 'y']) {
+      ch.options.scales[ax].ticks = Object.assign(ch.options.scales[ax].ticks || {}, { color: fg });
+      ch.options.scales[ax].grid = { color: line };
+      ch.options.scales[ax].border = { color: line };
+    }
+    if (ch.options.plugins.legend) ch.options.plugins.legend.labels = Object.assign(ch.options.plugins.legend.labels || {}, { color: css('--fg') });
+    ch.update();
+  }
+  let mChart = null;
+  function applyTheme() {
+    themeChart(seriesChart, [css('--accent')]);
+    if (mChart) themeChart(mChart, [css('--accent'), css('--accent2')]);
+  }
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
+  new MutationObserver(applyTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+  /* ---------- Ringkasan ---------- */
+  function setCard(id, cls) { const c = $(id); c.classList.remove('ok', 'warn', 'bad', 'accent'); if (cls) c.classList.add(cls); }
+
+  function renderSummary() {
+    const n = talents.length;
+    const tpg = talents.filter(isTpg).length, ready = talents.filter(isReady).length;
+    const tpgV = pct(tpg, n), r = rating(tpgV), readyV = pct(ready, n);
+    $('kTotal').textContent = n;
+    $('kTpg').textContent = fmtPct(tpgV);
+    $('kTpgNote').textContent = `${tpg} daripada ${n} talent capai & disahkan`;
+    $('kRating').innerHTML = (n ? r : '-') + '<small> / 5</small>';
+    $('kReady').textContent = fmtPct(readyV);
+    $('kReadyNote').textContent = `${ready} talent hanya menunggu Kirkpatrick L3`;
+    const cardCls = v => v >= .8 ? 'ok' : v >= .5 ? 'warn' : 'bad';
+    setCard('kTpgCard', n ? cardCls(tpgV) : null);
+    setCard('kRatingCard', n ? (r >= 4 ? 'ok' : r === 3 ? 'warn' : 'bad') : null);
+    setCard('kReadyCard', n ? cardCls(readyV) : null);
+
+    // Funnel L3
+    const steps = [
+      ['1. Kehadiran AIL (Core 1)', talents.filter(t => t.idpAttendance).length],
+      ['2. SV Form dihantar', talents.filter(t => t.l3Sv).length],
+      ['3. Pembentangan selesai', talents.filter(t => t.l3Presentation).length],
+      ['4. HOD Form disahkan (akhir)', talents.filter(t => t.l3Hod).length]
+    ];
+    $('funnel').innerHTML = steps.map(([label, c], i) => `
+      <div class="bar-row">
+        <span class="name">${label}</span>
+        <div class="bar-track"><div class="bar-fill" style="width:${pct(c, n) * 100}%;background:${i === 0 ? 'var(--accent)' : `color-mix(in srgb, var(--accent) ${100 - i * 18}%, var(--accent2))`}"></div></div>
+        <span class="n">${c} <small>${fmtPct(pct(c, n))}</small></span>
+      </div>`).join('');
+    const gap = steps[2][1] - steps[3][1];
+    $('funnelNote').textContent = n ? `${gap} talent sudah membentang tetapi belum ada HOD Form. Ini halangan utama kepada TPG Index.` : '';
+
+    // Penunjuk
+    const ind = [
+      ['Borang status (Q2): Verified', talents.filter(verified).length],
+      ['Core 1: IDP Milestone (kehadiran AIL)', talents.filter(t => t.idpAttendance).length],
+      ['Core 2 L3: SV Form', talents.filter(t => t.l3Sv).length],
+      ['Core 2 L3: Pembentangan', talents.filter(t => t.l3Presentation).length],
+      ['Core 2 L3: HOD Form (akhir)', talents.filter(t => t.l3Hod).length],
+      ['Stretch 1: Process Improvement', talents.filter(t => t.stretch1).length],
+      ['Stretch 2: Stretch Role / Extra-Mile', talents.filter(t => t.stretch2).length]
+    ];
+    $('indicators').innerHTML = ind.map(([label, c]) => {
+      const v = pct(c, n), [b, cls] = band(v);
+      return `<tr><td>${label}</td><td class="num">${c}</td><td class="num">${fmtPct(v)}</td><td><span class="pill ${cls}">${b}</span></td></tr>`;
+    }).join('');
+
+    // Mengikut unit
+    const m = new Map();
+    talents.forEach(t => { const u = unitOf(t); const o = m.get(u) || { total: 0, tpg: 0, ready: 0 }; o.total++; if (isTpg(t)) o.tpg++; if (isReady(t)) o.ready++; m.set(u, o); });
+    const rows = [...m.entries()].sort((a, b) => b[1].total - a[1].total || a[0].localeCompare(b[0]));
+    $('units').innerHTML = rows.map(([u, o]) => {
+      const v = pct(o.tpg, o.total), r = rating(v), rv = pct(o.ready, o.total);
+      return `<tr><td class="unit-name">${esc(titleCase(u))}</td><td class="num">${o.total}</td><td class="num">${o.tpg}</td><td class="num">${fmtPct(v)}</td><td class="c"><span class="rating pill ${ratingCls(r)}">${r}</span></td><td class="num">${fmtPct(rv)}</td></tr>`;
+    }).join('') + (n ? `<tr class="total"><td>Jumlah</td><td class="num">${n}</td><td class="num">${tpg}</td><td class="num">${fmtPct(tpgV)}</td><td class="c"><span class="rating pill ${ratingCls(r)}">${r}</span></td><td class="num">${fmtPct(readyV)}</td></tr>` : '');
+
+    // Siri
+    const s = [1, 2, 3, 4, 5].map(k => talents.filter(t => Number(t.series) === k).length);
+    s.push(n - s.reduce((a, b) => a + b, 0));
+    seriesChart.data.datasets[0].data = s;
+    seriesChart.update();
+
+    // Pembentangan terkini
+    const pres = talents.filter(t => t.presentationDate).sort((a, b) => b.presentationDate.localeCompare(a.presentationDate)).slice(0, 8);
+    $('presList').innerHTML = pres.length ? pres.map(t => `<tr><td class="sub" style="white-space:nowrap">${fmtDate(t.presentationDate)}</td><td><div class="who">${esc(titleCase(t.name))}</div><div class="sub">${esc(titleCase(unitOf(t)))}</div></td><td class="c">${tick(t.l3Presentation)}</td><td class="c">${tick(t.l3Hod)}</td></tr>`).join('')
+      : '<tr><td colspan="4" class="note">Tiada tarikh pembentangan direkodkan.</td></tr>';
+  }
+
+  /* ---------- Senarai talent ---------- */
+  function renderFilters() {
+    const units = [...new Set(talents.map(unitOf))].sort();
+    const cu = $('fUnit').value;
+    $('fUnit').innerHTML = '<option value="">Semua jabatan / bahagian</option>' + units.map(u => `<option value="${esc(u)}">${esc(titleCase(u))}</option>`).join('');
+    $('fUnit').value = cu;
+    const cs = $('fSeries').value;
+    $('fSeries').innerHTML = '<option value="">Semua siri</option>' + [1, 2, 3, 4, 5].map(k => `<option value="${k}">Siri ${k}</option>`).join('') + '<option value="none">Belum hadir</option>';
+    $('fSeries').value = cs;
+    $('jabList').innerHTML = [...new Set(talents.map(t => t.jabatan).filter(Boolean))].sort().map(v => `<option value="${esc(v)}">`).join('');
+    $('bahList').innerHTML = [...new Set(talents.map(t => t.bahagian).filter(Boolean))].sort().map(v => `<option value="${esc(v)}">`).join('');
+  }
+
+  function filtered() {
+    const q = $('q').value.trim().toLowerCase(), u = $('fUnit').value, s = $('fSeries').value, st = $('fStage').value;
+    return talents.filter(t => {
+      if (u && unitOf(t) !== u) return false;
+      if (s === 'none' && t.series) return false;
+      if (s && s !== 'none' && String(t.series) !== s) return false;
+      if (st === 'tpg' && !isTpg(t)) return false;
+      if (st === 'ready' && !(isReady(t) && !isTpg(t))) return false;
+      if (st === 'notready' && isReady(t)) return false;
+      if (st === 'nosv' && t.l3Sv) return false;
+      if (st === 'nopres' && t.l3Presentation) return false;
+      if (st === 'nohod' && t.l3Hod) return false;
+      if (q) {
+        const hay = [t.name, t.staffNo, t.title, t.jabatan, t.bahagian, t.supervisor, t.ketuaBahagian, t.ketuaJabatan, t.email].join(' ').toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }
+
+  function renderList() {
+    const list = filtered();
+    $('countNote').textContent = talents.length ? `${list.length} daripada ${talents.length} talent` : '';
+    $('rows').innerHTML = list.map(t => {
+      const [sl, sc] = stageOf(t);
+      return `<tr data-id="${esc(t.id)}" tabindex="0">
+        <td><div class="who">${esc(titleCase(t.name))}</div><div class="sub">${esc(t.staffNo)} · ${esc(titleCase(t.title))}</div></td>
+        <td><div>${esc(titleCase(unitOf(t)))}</div>${t.bahagian && unitOf(t) !== t.bahagian ? `<div class="sub">${esc(titleCase(t.bahagian))}</div>` : ''}</td>
+        <td>${esc(t.gred || '-')}</td>
+        <td class="c">${t.series || '-'}</td>
+        <td class="c">${tick(verified(t))}</td><td class="c">${tick(t.stretch1)}</td><td class="c">${tick(t.stretch2)}</td>
+        <td class="c">${tick(t.idpAttendance)}</td><td class="c">${tick(t.l3Sv)}</td><td class="c">${tick(t.l3Presentation)}</td><td class="c">${tick(t.l3Hod)}</td>
+        <td><span class="pill ${sc}">${sl}</span></td>
+      </tr>`;
+    }).join('');
+    const empty = $('emptyList');
+    if (!talents.length) {
+      empty.hidden = false;
+      empty.innerHTML = db
+        ? `<strong>Belum ada talent</strong><span>Tambah talent pertama atau minta Claude import Master List ETP.</span>`
+        : `<strong>Sedang menyambung ke pangkalan data…</strong><span>Senarai talent akan dipaparkan di sini.</span>`;
+    } else if (!list.length) {
+      empty.hidden = false;
+      empty.innerHTML = '<strong>Tiada talent sepadan</strong><span>Cuba kata kunci lain atau kosongkan penapis.</span>';
+    } else empty.hidden = true;
+  }
+  ['q', 'fUnit', 'fSeries', 'fStage'].forEach(id => $(id).addEventListener('input', renderList));
+  $('rows').addEventListener('click', e => { const tr = e.target.closest('tr[data-id]'); if (tr) openForm(tr.dataset.id); });
+  $('rows').addEventListener('keydown', e => { if (e.key === 'Enter') { const tr = e.target.closest('tr[data-id]'); if (tr) openForm(tr.dataset.id); } });
+
+  function renderAll() { renderSummary(); renderFilters(); renderList(); }
+
+  /* ---------- Borang ---------- */
+  const TXT = { staffNo: 'fStaffNo', gred: 'fGred', name: 'fName', title: 'fTitle', jabatan: 'fJabatan', bahagian: 'fBahagian', email: 'fEmail', gender: 'fGender', supervisor: 'fSupervisor', ketuaBahagian: 'fKB', ketuaJabatan: 'fKJ', formQ2: 'fQ2', formQ3: 'fQ3', formQ4: 'fQ4', initiative: 'fInit', presentationDate: 'fPresDate' };
+  const CHK = { stretch1: 'fS1', stretch2: 'fS2', idpAttendance: 'fIdp', l3Sv: 'fSv', l3Presentation: 'fPres', l3Hod: 'fHod' };
+  const DEFAULTS = { formQ2: 'Pending', formQ3: 'Pending', formQ4: 'Pending', initiative: 'In Progress' };
+
+  function readForm() {
+    const d = {};
+    for (const [k, id] of Object.entries(TXT)) { const v = $(id).value.trim(); d[k] = v === '' ? null : v; }
+    d.staffNo = (d.staffNo || '').toUpperCase();
+    d.jabatan = d.jabatan ? d.jabatan.toUpperCase() : null;
+    d.bahagian = d.bahagian ? d.bahagian.toUpperCase() : null;
+    for (const [k, id] of Object.entries(CHK)) d[k] = $(id).checked;
+    d.series = $('fSeriesIn').value ? Number($('fSeriesIn').value) : null;
+    return d;
+  }
+  function updateStagePill() { const [l, c] = stageOf(readForm()); $('dlgStage').innerHTML = `<span class="pill ${c}">${l}</span>`; }
+  $('form').addEventListener('input', updateStagePill);
+
+  async function openForm(id) {
+    editingId = id;
+    const t = id ? talents.find(x => x.id === id) : null;
+    $('dlgTitle').textContent = t ? titleCase(t.name) : 'Tambah talent';
+    for (const [k, el] of Object.entries(TXT)) { $(el).value = t ? (t[k] ?? '') : (DEFAULTS[k] || ''); $(el).disabled = !canWrite; }
+    for (const [k, el] of Object.entries(CHK)) { $(el).checked = t ? !!t[k] : false; $(el).disabled = !canWrite; }
+    $('fSeriesIn').value = t && t.series ? String(t.series) : ''; $('fSeriesIn').disabled = !canWrite;
+    $('fStaffNo').readOnly = !!t;
+    $('saveBtn').hidden = !canWrite;
+    $('fError').hidden = true;
+    $('fMeta').textContent = t && t.source ? 'Sumber: ' + t.source : '';
+    $('delArea').innerHTML = t && canWrite ? '<button class="btn danger" type="button" id="delBtn">Padam</button>' : '';
+    if (t && canWrite) $('delBtn').onclick = askDelete;
+    updateStagePill();
+    $('dlg').showModal();
+    if (t && t.updatedBy && userApi) {
+      try { const ps = await userApi.profiles([t.updatedBy]); $('fMeta').textContent = (t.source ? 'Sumber: ' + t.source + ' · ' : '') + `Dikemas kini oleh ${(ps[t.updatedBy] && ps[t.updatedBy].name) || 'seseorang'} pada ${fmtDate(new Date(t.updatedAt).toISOString().slice(0, 10))}`; } catch (_) {}
+    }
+  }
+
+  function askDelete() {
+    $('delArea').innerHTML = '<span class="confirm">Padam talent ini? <button class="btn danger" type="button" id="delYes">Ya, padam</button><button class="btn" type="button" id="delNo">Tidak</button></span>';
+    $('delNo').onclick = () => { $('delArea').innerHTML = '<button class="btn danger" type="button" id="delBtn">Padam</button>'; $('delBtn').onclick = askDelete; };
+    $('delYes').onclick = async () => {
+      try { await db.collection('talents').doc(editingId).delete(); $('dlg').close(); toast('Talent dipadam'); }
+      catch (e) { showFormError(e); }
+    };
+  }
+  function showFormError(e) {
+    $('fError').hidden = false;
+    $('fError').textContent = e && e.code === 'not_granted'
+      ? 'Anda hanya ada akses lihat. Minta pemilik portal beri akses sunting.'
+      : 'Tidak dapat simpan: ' + ((e && e.message) || 'ralat tidak diketahui') + '. Cuba lagi.';
+  }
+  $('cancelBtn').onclick = () => $('dlg').close();
+  $('addBtn').onclick = () => openForm(null);
+  $('form').addEventListener('submit', async e => {
+    e.preventDefault();
+    if (!db) { showFormError({ message: 'pangkalan data belum bersambung' }); return; }
+    const d = readForm();
+    if (!editingId && talents.some(t => t.id === d.staffNo)) { showFormError({ message: `no. staf ${d.staffNo} sudah wujud` }); return; }
+    d.updatedAt = Date.now(); d.updatedBy = myId;
+    $('saveBtn').disabled = true;
+    try {
+      if (editingId) await db.collection('talents').doc(editingId).update(d);
+      else await db.collection('talents').doc(d.staffNo).set({ ...d, source: 'Ditambah melalui portal' });
+      $('dlg').close();
+      toast(editingId ? 'Perubahan disimpan' : 'Talent ditambah');
+    } catch (err) { showFormError(err); }
+    finally { $('saveBtn').disabled = false; }
+  });
+
+  let toastTimer;
+  function toast(msg) { const t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 2200); }
+
+  /* ---------- CSV ---------- */
+  $('csvBtn').onclick = async () => {
+    const cols = [['NO. STAF', 'staffNo'], ['NAMA', 'name'], ['EMEL', 'email'], ['JAWATAN', 'title'], ['JABATAN', 'jabatan'], ['BAHAGIAN', 'bahagian'], ['GRED', 'gred'], ['JANTINA', 'gender'],
+      ['PENYELIA', 'supervisor'], ['KETUA BAHAGIAN', 'ketuaBahagian'], ['KETUA JABATAN', 'ketuaJabatan'], ['FORMS Q2', 'formQ2'], ['FORMS Q3', 'formQ3'], ['FORMS Q4', 'formQ4'], ['STATUS INISIATIF', 'initiative'],
+      ['STRETCH 1', 'stretch1'], ['STRETCH 2', 'stretch2'], ['CORE 1 IDP', 'idpAttendance'], ['SIRI', 'series'], ['L3 SV FORM', 'l3Sv'], ['L3 PEMBENTANGAN', 'l3Presentation'], ['L3 HOD FORM', 'l3Hod'], ['TARIKH PEMBENTANGAN', 'presentationDate']];
+    const cell = v => { const s = v === true ? 'Yes' : v === false ? 'No' : String(v ?? ''); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+    const list = filtered();
+    const csv = '﻿' + [cols.map(c => c[0]).concat('TAHAP').join(',')].concat(list.map(t => cols.map(c => cell(t[c[1]])).concat(cell(stageOf(t)[0])).join(','))).join('\r\n');
+    try { await downloads.save({ filename: `ETP-2026-talent-${new Date().toISOString().slice(0, 10)}.csv`, data: new Blob([csv], { type: 'text/csv' }) }); }
+    catch (e) { if (e && e.code !== 'cancelled' && e.code !== 'declined') toast('Muat turun tidak berjaya'); }
+  };
+
+  /* ---------- Sambungan data ---------- */
+  renderAll(); applyTheme();
+  (async () => {
+    if (!window.claude || !window.claude.use) { dbMissing(); return; }
+    userApi = await window.claude.use('user');
+    if (userApi) {
+      try { myId = await userApi.id(); } catch (_) {}
+      try { const me = await userApi.me(); if (me && me.name) $('whoami').textContent = '· ' + me.name; } catch (_) {}
+      try { const w = await userApi.can('data.write'); if (w === false) canWrite = false; } catch (_) {}
+    }
+    $('addBtn').hidden = !canWrite;
+    db = await window.claude.use('db');
+    if (!db) { dbMissing(); return; }
+    db.collection('talents').limit(1000).onSnapshot(snap => {
+      talents = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => String(a.name).localeCompare(String(b.name)));
+      renderAll();
+    }, err => {
+      $('dbBanner').hidden = false;
+      $('dbBanner').textContent = 'Tidak dapat memuatkan senarai talent (' + (err.message || err.code) + '). Muat semula halaman untuk cuba lagi.';
+    });
+    renderList();
+    downloads = await window.claude.use('downloads');
+    $('csvBtn').hidden = !downloads;
+  })();
+
+  function dbMissing() {
+    $('dbBanner').hidden = false;
+    $('dbBanner').textContent = 'Data talent tidak tersedia dalam paparan ini. Log masuk ke claude.ai dan buka pautan portal untuk melihat data ETP.';
+    $('addBtn').hidden = true; canWrite = false;
+    renderList();
+    $('emptyList').innerHTML = '<strong>Data talent tidak dapat dimuatkan</strong><span>Log masuk untuk melihat talent pool.</span>';
+  }
+
+  /* ---------- Monitor sistem (data contoh) ---------- */
+  let monitorStarted = false, cpu = 42, mem = 55;
+  function startMonitor() {
+    if (monitorStarted) return; monitorStarted = true;
+    mChart = new Chart($('mChart'), {
+      type: 'line',
+      data: { labels: [], datasets: [
+        { label: 'CPU', data: [], tension: 0.3, pointRadius: 0, borderWidth: 2, fill: true },
+        { label: 'Memori', data: [], tension: 0.3, pointRadius: 0, borderWidth: 2 }
+      ] },
+      options: { animation: false, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+        scales: { y: { min: 0, max: 100 }, x: { ticks: { maxTicksLimit: 5 } } },
+        plugins: { legend: { position: 'bottom', labels: { boxWidth: 10 } } } }
+    });
+    themeChart(mChart, [css('--accent'), css('--accent2')]);
+    for (let i = 0; i < 8; i++) tickMonitor();
+    setInterval(tickMonitor, 3000);
+  }
+  function tickMonitor() {
+    const rand = (a, b) => Math.round(a + Math.random() * (b - a));
+    const drift = (v, lo, hi) => Math.max(lo, Math.min(hi, v + rand(-8, 8)));
+    cpu = drift(cpu, 8, 95); mem = drift(mem, 30, 88);
+    const level = (v, w, b) => v > b ? 'bad' : v > w ? 'warn' : 'ok';
+    const set = (k, txt, st) => { $('m-' + k).textContent = txt; const c = $('mk-' + k); c.classList.remove('ok', 'warn', 'bad'); if (st) c.classList.add(st); };
+    const errs = rand(0, 9);
+    set('cpu', cpu + '%', level(cpu, 70, 85)); set('mem', mem + '%', level(mem, 75, 85));
+    set('rpm', rand(800, 1500).toLocaleString('ms-MY'), null); set('err', String(errs), level(errs, 5, 8));
+    const now = new Date().toLocaleTimeString('ms-MY'); $('mUpdate').textContent = now;
+    mChart.data.labels.push(now); mChart.data.datasets[0].data.push(cpu); mChart.data.datasets[1].data.push(mem);
+    if (mChart.data.labels.length > 20) { mChart.data.labels.shift(); mChart.data.datasets.forEach(d => d.data.shift()); }
+    mChart.update();
+    const st = () => { const r = Math.random(); return r > 0.15 ? ['UP', 'p-ok'] : r > 0.05 ? ['SLOW', 'p-warn'] : ['DOWN', 'p-bad']; };
+    $('mServices').innerHTML = [['Web', 20, 200], ['API', 30, 300], ['Database', 5, 80], ['Cache', 1, 20]].map(([n, a, b]) => {
+      const [l, c] = st(); return `<tr><td>${n}</td><td><span class="pill ${c}">${l}</span></td><td class="num">${rand(a, b)} ms</td></tr>`; }).join('');
+  }
+</script>
+
+</body>
+</html>

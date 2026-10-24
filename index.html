@@ -10,7 +10,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
-  /* Layout: bar navigasi atas (Ringkasan / Talent / Monitor sistem); ringkasan KPI dahulu, kemudian funnel L3, penunjuk dan jadual unit */
+  /* Layout: bar navigasi atas (Ringkasan / Talent); ringkasan KPI dahulu, kemudian funnel L3, penunjuk dan jadual unit */
   :root {
     --bg: #f3f5f8; --surface: #ffffff; --sunken: #eef1f5; --line: #dde3ea; --fg: #17202b; --muted: #5d6b7c;
     --accent: #2563c9; --accent-fg: #ffffff; --accent2: #0f8a7e;
@@ -153,11 +153,6 @@
 
   .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); background: var(--fg); color: var(--bg); padding: 8px 14px; border-radius: 8px; font-size: 13px; z-index: 20; }
 
-  /* Monitor */
-  .live::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--ok); margin-right: 6px; vertical-align: 1px; }
-  .m-kpi.ok { border-left-color: var(--ok); } .m-kpi.warn { border-left-color: var(--warn); } .m-kpi.bad { border-left-color: var(--bad); }
-  .grid-wide { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
-  @media (max-width: 860px) { .grid-wide { grid-template-columns: 1fr; } }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
 
@@ -167,7 +162,6 @@
     <nav aria-label="Bahagian portal">
       <a href="#ringkasan" data-view="ringkasan">Ringkasan</a>
       <a href="#talent" data-view="talent">Talent</a>
-      <a href="#monitor" data-view="monitor">Monitor sistem</a>
     </nav>
   </div>
 
@@ -276,25 +270,6 @@
     <div class="note">Q2 = Forms Q2 Verified · S1/S2 = Stretch 1/2 · IDP = Core 1 kehadiran AIL · SV, Bentang, HOD = Core 2 Kirkpatrick L3. Klik baris untuk kemas kini.</div>
   </section>
 
-  <!-- MONITOR -->
-  <section id="view-monitor" class="stack" hidden>
-    <div class="top">
-      <span class="note">Data contoh. Sambungkan ke API pelayan sebenar untuk angka sebenar.</span>
-      <span class="note live">Kemas kini <span id="mUpdate">-</span></span>
-    </div>
-    <div class="kpis">
-      <div class="panel kpi m-kpi" id="mk-cpu"><div class="label">CPU</div><div class="value" id="m-cpu">-</div><div class="note">amaran &gt; 70%</div></div>
-      <div class="panel kpi m-kpi" id="mk-mem"><div class="label">Memori</div><div class="value" id="m-mem">-</div><div class="note">amaran &gt; 75%</div></div>
-      <div class="panel kpi m-kpi" id="mk-rpm"><div class="label">Request / min</div><div class="value" id="m-rpm">-</div><div class="note">trafik masuk</div></div>
-      <div class="panel kpi m-kpi" id="mk-err"><div class="label">Ralat (5xx)</div><div class="value" id="m-err">-</div><div class="note">amaran &gt; 5</div></div>
-    </div>
-    <div class="grid-wide">
-      <div class="panel"><div class="label">CPU &amp; memori (%)</div><div class="chart-box"><canvas id="mChart" aria-label="Carta CPU dan memori"></canvas></div></div>
-      <div class="panel"><div class="label">Status servis</div>
-        <div class="table-scroll"><table><thead><tr><th>Servis</th><th>Status</th><th class="num">Latency</th></tr></thead><tbody id="mServices"></tbody></table></div>
-      </div>
-    </div>
-  </section>
 </div>
 
 <dialog id="dlg" aria-labelledby="dlgTitle">
@@ -381,12 +356,11 @@
   let editingId = null;
 
   /* ---------- Navigasi ---------- */
-  const VIEWS = ['ringkasan', 'talent', 'monitor'];
+  const VIEWS = ['ringkasan', 'talent'];
   function showView(v) {
     if (!VIEWS.includes(v)) v = 'ringkasan';
     VIEWS.forEach(x => { $('view-' + x).hidden = x !== v; });
     document.querySelectorAll('nav a').forEach(a => { if (a.dataset.view === v) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
-    if (v === 'monitor') startMonitor();
   }
   document.querySelectorAll('nav a').forEach(a => a.addEventListener('click', e => {
     e.preventDefault(); const v = a.dataset.view;
@@ -409,10 +383,8 @@
     ch.data.datasets.forEach((d, i) => { d.borderColor = colors[i]; d.backgroundColor = d.fill ? colors[i] + '22' : colors[i]; });
     ch.update();
   }
-  let mChart = null;
   function applyTheme() {
     themeChart(seriesChart, [css('--accent')]);
-    if (mChart) themeChart(mChart, [css('--accent'), css('--accent2')]);
   }
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
   new MutationObserver(applyTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
@@ -832,44 +804,6 @@
     no.onclick = () => { row.remove(); $('clearBtn').hidden = false; };
     yes.onclick = () => { row.remove(); local = null; lsWrite(null); persistLocal(); toast('Data dibuang dari browser ini'); };
   });
-
-  /* ---------- Monitor sistem (data contoh) ---------- */
-  let monitorStarted = false, cpu = 42, mem = 55;
-  function startMonitor() {
-    if (monitorStarted) return; monitorStarted = true;
-    if (hasChart) mChart = new Chart($('mChart'), {
-      type: 'line',
-      data: { labels: [], datasets: [
-        { label: 'CPU', data: [], tension: 0.3, pointRadius: 0, borderWidth: 2, fill: true },
-        { label: 'Memori', data: [], tension: 0.3, pointRadius: 0, borderWidth: 2 }
-      ] },
-      options: { animation: false, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
-        scales: { y: { min: 0, max: 100 }, x: { ticks: { maxTicksLimit: 5 } } },
-        plugins: { legend: { position: 'bottom', labels: { boxWidth: 10 } } } }
-    });
-    themeChart(mChart, [css('--accent'), css('--accent2')]);
-    for (let i = 0; i < 8; i++) tickMonitor();
-    setInterval(tickMonitor, 3000);
-  }
-  function tickMonitor() {
-    const rand = (a, b) => Math.round(a + Math.random() * (b - a));
-    const drift = (v, lo, hi) => Math.max(lo, Math.min(hi, v + rand(-8, 8)));
-    cpu = drift(cpu, 8, 95); mem = drift(mem, 30, 88);
-    const level = (v, w, b) => v > b ? 'bad' : v > w ? 'warn' : 'ok';
-    const set = (k, txt, st) => { $('m-' + k).textContent = txt; const c = $('mk-' + k); c.classList.remove('ok', 'warn', 'bad'); if (st) c.classList.add(st); };
-    const errs = rand(0, 9);
-    set('cpu', cpu + '%', level(cpu, 70, 85)); set('mem', mem + '%', level(mem, 75, 85));
-    set('rpm', rand(800, 1500).toLocaleString('ms-MY'), null); set('err', String(errs), level(errs, 5, 8));
-    const now = new Date().toLocaleTimeString('ms-MY'); $('mUpdate').textContent = now;
-    if (mChart) {
-      mChart.data.labels.push(now); mChart.data.datasets[0].data.push(cpu); mChart.data.datasets[1].data.push(mem);
-      if (mChart.data.labels.length > 20) { mChart.data.labels.shift(); mChart.data.datasets.forEach(d => d.data.shift()); }
-      mChart.update();
-    }
-    const st = () => { const r = Math.random(); return r > 0.15 ? ['UP', 'p-ok'] : r > 0.05 ? ['SLOW', 'p-warn'] : ['DOWN', 'p-bad']; };
-    $('mServices').innerHTML = [['Web', 20, 200], ['API', 30, 300], ['Database', 5, 80], ['Cache', 1, 20]].map(([n, a, b]) => {
-      const [l, c] = st(); return `<tr><td>${n}</td><td><span class="pill ${c}">${l}</span></td><td class="num">${rand(a, b)} ms</td></tr>`; }).join('');
-  }
 
   renderAll(); applyTheme();
   connect();

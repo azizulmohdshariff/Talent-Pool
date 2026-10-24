@@ -1,4 +1,4 @@
-# Talent Pool Portal
+# ETP Portal
 
 Monitoring portal for the Emerging Talent Program (ETP) 2026: TPG Index summary, Kirkpatrick L3
 funnel, KPI status by department and talent, and an editable talent list.

@@ -285,6 +285,7 @@
   .act-mini div:last-child { border-bottom: 0; padding-bottom: 0; }
   a.tlink, button.tlink { color: inherit; text-decoration: none; border: 0; background: none; padding: 0; font: inherit; cursor: pointer; text-align: left; }
   a.tlink:hover .who, button.tlink:hover .who { color: var(--accent); text-decoration: underline; }
+  .export-bar { display: flex; justify-content: flex-end; align-items: center; gap: 8px 12px; flex-wrap: wrap; }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
 
@@ -448,6 +449,7 @@
 
   <!-- SUMMARY -->
   <section id="view-summary" class="stack" hidden>
+    <div class="export-bar"><span class="note">Management summary of the current data, as a 2-page A4 PDF.</span><button class="btn primary pdfBtn" type="button" hidden>Download PDF summary</button></div>
     <div class="kpis">
       <div class="panel kpi accent"><div class="label">Total talent</div><div class="value" id="kTotal">0</div><div class="note">identified in ETP 2026</div></div>
       <div class="panel kpi" id="kTpgCard"><div class="label">Official TPG Index</div><div class="value" id="kTpg">0%</div><div class="note" id="kTpgNote">0 talent achieved &amp; verified</div></div>
@@ -502,6 +504,7 @@
 
   <!-- KPI STATUS -->
   <section id="view-kpi" class="stack" hidden>
+    <div class="export-bar"><span class="note">Management summary of the current data, as a 2-page A4 PDF.</span><button class="btn primary pdfBtn" type="button" hidden>Download PDF summary</button></div>
     <div class="kpis two">
       <div class="panel kpi" id="kcDept"><div class="tier">Department · Corporate target</div><div class="label">TPG Index</div><div class="value" id="kcDeptVal">-</div><div class="note" id="kcDeptNote"></div></div>
       <div class="panel kpi" id="kcTal"><div class="tier">Talent · Personal Growth &amp; Competency Development</div><div class="label">Talent meeting target (rating ≥4)</div><div class="value" id="kcTalVal">-</div><div class="note" id="kcTalNote"></div></div>
@@ -1368,8 +1371,9 @@
     saveCsv(`ETP-2026-talent-${new Date().toISOString().slice(0, 10)}.csv`, csv);
   };
 
-  async function saveCsv(filename, csv) {
-    const blob = new Blob([csv], { type: 'text/csv' });
+  function saveCsv(filename, csv) { return saveBlob(filename, new Blob([csv], { type: 'text/csv' })); }
+
+  async function saveBlob(filename, blob) {
     if (!downloads) {
       // Di luar claude.ai (cth. GitHub Pages): muat turun biasa melalui pautan
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename;
@@ -1378,6 +1382,180 @@
     }
     try { await downloads.save({ filename, data: blob }); }
     catch (e) { if (e && e.code !== 'cancelled' && e.code !== 'declined') toast('Download failed'); }
+  }
+
+  /* ---------- PDF management summary ---------- */
+  const PDF_LIBS = ['https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js', 'https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js'];
+  let pdfReady = null;
+  function loadScript(src) {
+    return new Promise((ok, fail) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = () => fail(new Error('Could not load the PDF library. Check your internet connection.')); document.head.appendChild(s); });
+  }
+  function loadPdf() {
+    if (window.jspdf && window.jspdf.jsPDF && window.jspdf.jsPDF.API.autoTable) return Promise.resolve();
+    return pdfReady || (pdfReady = PDF_LIBS.reduce((p, src) => p.then(() => loadScript(src)), Promise.resolve()).catch(e => { pdfReady = null; throw e; }));
+  }
+  // The standard PDF font covers Latin-1 only, so map symbols the portal uses
+  const pdfText = v => String(v ?? '').replace(/≥/g, '>=').replace(/≤/g, '<=').replace(/[–—]/g, '-').replace(/·/g, '|').replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/✓/g, 'Yes').replace(/✗/g, 'No').replace(/[^\x00-\xFF]/g, '');
+
+  async function exportPdf(btn) {
+    if (!talents.length) { toast('Load the talent data first'); return; }
+    const label = btn.textContent; btn.disabled = true; btn.textContent = 'Preparing PDF…';
+    try {
+      await loadPdf();
+      const blob = buildPdf();
+      await saveBlob(`ETP-2026-management-summary-${new Date().toISOString().slice(0, 10)}.pdf`, blob);
+    } catch (e) { toast(e && e.message ? e.message : 'PDF could not be created'); }
+    finally { btn.disabled = false; btn.textContent = label; }
+  }
+  document.querySelectorAll('.pdfBtn').forEach(b => b.addEventListener('click', () => exportPdf(b)));
+
+  function buildPdf() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const W = 210, M = 14, CW = W - 2 * M;
+    const C = { green: [13, 102, 54], mid: [74, 148, 55], logo: [82, 222, 86], tint: [227, 243, 218], ink: [42, 43, 46], muted: [106, 107, 109], line: [230, 230, 230], bad: [198, 40, 40], warn: [148, 88, 0], ok: [13, 102, 54] };
+    const n = talents.length, tpg = talents.filter(isTpg).length, ready = talents.filter(isReady).length;
+    const tpgV = pct(tpg, n), r = rating(tpgV), readyV = pct(ready, n);
+    const t4 = talents.filter(t => talentRating(t) >= 4).length;
+    const need4 = Math.max(0, Math.ceil(.65 * n - 1e-9) - tpg);
+    const today = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+    const P = s => pdfText(s);
+    const ratingColor = v => v >= 4 ? C.ok : v === 3 ? C.warn : C.bad;
+
+    // Header
+    doc.setFillColor(...C.logo); doc.rect(0, 0, W, 3, 'F');
+    doc.setTextColor(...C.green); doc.setFont('helvetica', 'bold'); doc.setFontSize(9);
+    doc.text('EMERGING TALENT PROGRAM (ETP) 2026', M, 13);
+    doc.setTextColor(...C.ink); doc.setFontSize(18); doc.text('Management Summary', M, 21);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...C.muted);
+    doc.text(P(`KPI 10 Talent Pool Growth (TPG) Index | ${n} talent | generated ${today}`), M, 27);
+    let y = 33;
+
+    // KPI tiles
+    const tiles = [
+      ['TOTAL TALENT', String(n), 'identified in ETP 2026', C.green],
+      ['OFFICIAL TPG INDEX', fmtPct(tpgV), `rating ${r} of 5 | ${tpg} achieved`, ratingColor(r)],
+      ['READINESS', fmtPct(readyV), `${ready} awaiting Kirkpatrick L3 only`, readyV >= .8 ? C.ok : C.warn],
+      ['TALENT AT TARGET', `${t4} / ${n}`, 'talent KPI rating 4 or 5', t4 / n >= .8 ? C.ok : C.bad]
+    ];
+    const tw = (CW - 3 * 4) / 4;
+    tiles.forEach(([lab, val, note, col], i) => {
+      const x = M + i * (tw + 4);
+      doc.setDrawColor(...C.line); doc.setFillColor(255, 255, 255); doc.roundedRect(x, y, tw, 24, 1.5, 1.5, 'FD');
+      doc.setFillColor(...col); doc.rect(x, y, 1.2, 24, 'F');
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(7); doc.setTextColor(...C.muted); doc.text(P(lab), x + 4, y + 6);
+      doc.setFontSize(15); doc.setTextColor(...C.ink); doc.text(P(val), x + 4, y + 14);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(...C.muted); doc.text(doc.splitTextToSize(P(note), tw - 6), x + 4, y + 19);
+    });
+    y += 30;
+
+    // Key points
+    const acts = allActions();
+    const cnt = k => acts.filter(a => a.key === k).length;
+    const owners = {};
+    acts.filter(a => a.role === 'HOD' && a.key === 'hod').forEach(a => { const k = titleCase(a.owner) || 'Not recorded'; owners[k] = (owners[k] || 0) + 1; });
+    const topHod = Object.entries(owners).sort((a, b) => b[1] - a[1]).slice(0, 2);
+    const points = [
+      `TPG Index is ${fmtPct(tpgV)} (rating ${r}). ${need4 ? `${need4} more talent must complete 2 Core + 1 Stretch to reach rating 4 (65%).` : 'The rating 4 target is met.'}`,
+      `${ready} of ${n} talent (${fmtPct(readyV)}) have completed TDP and at least 1 Stretch, and are waiting only for Kirkpatrick L3.`,
+      `Kirkpatrick L3 is the main blocker: ${cnt('sv')} SV Forms, ${cnt('pres')} presentations and ${cnt('hod')} HOD Form endorsements are still open.`,
+      topHod.length ? `Largest HOD endorsement queues: ${topHod.map(([k, v]) => `${k} (${v})`).join(', ')}.` : ''
+    ].filter(Boolean);
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(...C.ink); doc.text('Key points', M, y + 4);
+    y += 7;
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
+    const ptLines = points.map(pt => doc.splitTextToSize(P(pt), CW - 10));
+    const boxH = ptLines.reduce((h, l) => h + l.length * 4.2 + 1.5, 4);
+    doc.setFillColor(...C.tint); doc.roundedRect(M, y, CW, boxH, 1.5, 1.5, 'F');
+    let py = y + 6;
+    ptLines.forEach(lines => { doc.setFillColor(...C.green); doc.circle(M + 4, py - 1.2, 0.8, 'F'); doc.setTextColor(...C.ink); doc.text(lines, M + 7, py); py += lines.length * 4.2 + 1.5; });
+    y += boxH + 8;
+
+    // Funnel
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.text('Kirkpatrick L3 verification chain', M, y); y += 5;
+    const steps = [['1. AIL attendance (Core 1)', talents.filter(t => t.idpAttendance).length], ['2. SV Form submitted', talents.filter(t => t.l3Sv).length],
+      ['3. Presentation completed', talents.filter(t => t.l3Presentation).length], ['4. HOD Form endorsed (final)', talents.filter(t => t.l3Hod).length]];
+    const bx = M + 58, bw = CW - 58 - 28;
+    steps.forEach(([lab, c], i) => {
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...C.ink); doc.text(P(lab), M, y + 3.5);
+      doc.setFillColor(...C.line); doc.roundedRect(bx, y, bw, 4.5, 1, 1, 'F');
+      doc.setFillColor(...(i === 0 ? C.green : C.mid)); doc.roundedRect(bx, y, Math.max(1, bw * pct(c, n)), 4.5, 1, 1, 'F');
+      doc.setFont('helvetica', 'bold'); doc.text(`${c}`, bx + bw + 3, y + 3.5); doc.setFont('helvetica', 'normal'); doc.setTextColor(...C.muted); doc.text(P(fmtPct(pct(c, n))), bx + bw + 11, y + 3.5);
+      y += 7.5;
+    });
+    y += 4;
+
+    // Indicators table
+    const head = { fillColor: C.green, textColor: 255, fontStyle: 'bold', fontSize: 8 };
+    const body = { fontSize: 8.5, textColor: C.ink, cellPadding: 1.8, lineColor: C.line, lineWidth: 0.1 };
+    const ind = [['Status forms (Q2): Verified', talents.filter(verified).length], ['Core 1: TDP Milestone (AIL attendance)', talents.filter(t => t.idpAttendance).length],
+      ['Core 2 L3: SV Form', talents.filter(t => t.l3Sv).length], ['Core 2 L3: Presentation', talents.filter(t => t.l3Presentation).length],
+      ['Core 2 L3: HOD Form (final)', talents.filter(t => t.l3Hod).length], ['Stretch 1: Process Improvement', talents.filter(t => t.stretch1).length],
+      ['Stretch 2: Stretch Role / Extra-Mile', talents.filter(t => t.stretch2).length]];
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(...C.ink); doc.text('Core & Stretch indicator achievement', M, y); y += 2;
+    doc.autoTable({ startY: y, margin: { left: M, right: M }, headStyles: head, styles: body, theme: 'grid',
+      head: [['Indicator', 'Completed', '%', 'Status']],
+      body: ind.map(([l, c]) => [P(l), c, P(fmtPct(pct(c, n))), band(pct(c, n))[0]]),
+      columnStyles: { 1: { halign: 'right' }, 2: { halign: 'right' } },
+      didParseCell: d => { if (d.section === 'body' && d.column.index === 3) { d.cell.styles.fontStyle = 'bold'; d.cell.styles.textColor = d.cell.raw === 'Good' ? C.ok : d.cell.raw === 'Moderate' ? C.warn : C.bad; } } });
+
+    // Page 2
+    doc.addPage();
+    doc.setFillColor(...C.logo); doc.rect(0, 0, W, 3, 'F');
+    y = 14;
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(...C.ink); doc.text('Department KPI: TPG Index by department / division', M, y); y += 2;
+    const m = new Map();
+    talents.forEach(t => { const u = unitOf(t); const o = m.get(u) || { total: 0, tpg: 0, ready: 0 }; o.total++; if (isTpg(t)) o.tpg++; if (isReady(t)) o.ready++; m.set(u, o); });
+    const deptRows = [...m.entries()].sort((a, b) => b[1].total - a[1].total || a[0].localeCompare(b[0])).map(([u, o]) => {
+      const v = pct(o.tpg, o.total); return [P(titleCase(u)), o.total, o.tpg, P(fmtPct(v)), rating(v), Math.max(0, Math.ceil(.65 * o.total - 1e-9) - o.tpg), P(fmtPct(pct(o.ready, o.total)))];
+    });
+    deptRows.push(['Corporate', n, tpg, P(fmtPct(tpgV)), r, need4, P(fmtPct(readyV))]);
+    doc.autoTable({ startY: y, margin: { left: M, right: M }, headStyles: head, styles: body, theme: 'grid',
+      head: [['Department / division', 'Talent', 'Achieved', 'TPG Index', 'Rating', 'More for rating 4', 'Readiness']],
+      body: deptRows, columnStyles: { 0: { cellWidth: 62 }, 1: { halign: 'right' }, 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'center' }, 5: { halign: 'right' }, 6: { halign: 'right' } },
+      didParseCell: d => {
+        if (d.section !== 'body') return;
+        if (d.row.index === deptRows.length - 1) { d.cell.styles.fontStyle = 'bold'; d.cell.styles.fillColor = C.tint; }
+        if (d.column.index === 4) { d.cell.styles.textColor = ratingColor(Number(d.cell.raw)); d.cell.styles.fontStyle = 'bold'; }
+      } });
+    y = doc.lastAutoTable.finalY + 8;
+
+    // Talent KPI distribution + pending actions side by side
+    const half = (CW - 6) / 2;
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.text('Talent KPI rating', M, y); doc.text('Pending actions', M + half + 6, y);
+    const scale = { 5: 'Both Core + both Stretch', 4: '2 Core + 1 Stretch (target)', 3: '2 Core only', 2: 'Only 1 Core', 1: 'No Core indicator' };
+    doc.autoTable({ startY: y + 2, margin: { left: M, right: M + half + 6 }, tableWidth: half, headStyles: head, styles: body, theme: 'grid',
+      head: [['Rating', 'Definition', 'Talent']],
+      body: [5, 4, 3, 2, 1].map(k => [k, scale[k], talents.filter(t => talentRating(t) === k).length]),
+      columnStyles: { 0: { halign: 'center', cellWidth: 14 }, 2: { halign: 'right', cellWidth: 16 } },
+      didParseCell: d => { if (d.section === 'body' && d.column.index === 0) { d.cell.styles.textColor = ratingColor(Number(d.cell.raw)); d.cell.styles.fontStyle = 'bold'; } } });
+    const leftEnd = doc.lastAutoTable.finalY;
+    doc.autoTable({ startY: y + 2, margin: { left: M + half + 6, right: M }, tableWidth: half, headStyles: head, styles: body, theme: 'grid',
+      head: [['Action', 'Owner', 'Open']],
+      body: ACTIONS.map(a => [a.title, a.role, cnt(a.key)]),
+      columnStyles: { 2: { halign: 'right', cellWidth: 14 } } });
+    y = Math.max(leftEnd, doc.lastAutoTable.finalY) + 8;
+
+    // Follow-up list
+    const by = new Map();
+    acts.forEach(a => { if (a.role === 'Talent') return; const name = a.role === 'GHCD' ? 'GHCD' : (titleCase(a.owner) || 'Not recorded'); const k = a.role + '|' + name;
+      if (!by.has(k)) by.set(k, { name, role: a.role, items: [] }); by.get(k).items.push(a); });
+    const top = [...by.values()].sort((a, b) => b.items.length - a.items.length || a.name.localeCompare(b.name)).slice(0, 10);
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.text('Follow-up: supervisors and HODs with the most open actions', M, y);
+    doc.autoTable({ startY: y + 2, margin: { left: M, right: M }, headStyles: head, styles: body, theme: 'grid',
+      head: [['Person', 'Role', 'Open actions', 'Actions']],
+      body: top.map(o => [P(o.name), o.role, o.items.length, P([...new Set(o.items.map(a => a.title))].join(', '))]),
+      columnStyles: { 0: { cellWidth: 58 }, 1: { cellWidth: 22 }, 2: { halign: 'right', cellWidth: 22 } } });
+
+    // Footer on every page
+    const pages = doc.getNumberOfPages();
+    for (let i = 1; i <= pages; i++) {
+      doc.setPage(i); doc.setDrawColor(...C.line); doc.line(M, 286, W - M, 286);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(...C.muted);
+      doc.text(P(`ETP Portal | Management summary | ${today}`), M, 290);
+      doc.text(`Page ${i} of ${pages}`, W - M, 290, { align: 'right' });
+    }
+    return doc.output('blob');
   }
 
   /* ---------- Sambungan data ---------- */
@@ -1408,7 +1586,7 @@
     });
     renderList();
     downloads = await window.claude.use('downloads');
-    $('csvBtn').hidden = !downloads; $('actCsvBtn').hidden = !downloads;
+    $('csvBtn').hidden = !downloads; $('actCsvBtn').hidden = !downloads; document.querySelectorAll('.pdfBtn').forEach(b => { b.hidden = !downloads; });
   }
 
   /* ---------- Mod fail tempatan (GitHub Pages / fail disimpan) ----------
@@ -1438,7 +1616,7 @@
 
   function enterLocalMode() {
     mode = 'local'; canWrite = true; downloads = null;
-    $('addBtn').hidden = false; $('csvBtn').hidden = false; $('actCsvBtn').hidden = false;
+    $('addBtn').hidden = false; $('csvBtn').hidden = false; $('actCsvBtn').hidden = false; document.querySelectorAll('.pdfBtn').forEach(b => { b.hidden = false; });
     store = {
       update: async (id, d) => { local.talents[id] = { ...local.talents[id], ...d }; persistLocal(); },
       create: async (id, d) => { if (!local) local = { fileName: 'portal', loadedAt: Date.now(), talents: {} }; local.talents[id] = d; persistLocal(); },

@@ -11,27 +11,29 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
-  /* Layout: bar navigasi atas (Ringkasan / Talent); ringkasan KPI dahulu, kemudian funnel L3, penunjuk dan jadual unit */
+  /* Layout: top bar with tabs; summary first, then detail. Colours follow the TH brand palette:
+     Sekunder Tona Gelap #0d6636 (primary), Hijau Utama #6ebe46, Hijau Logo #52de56, Kelabu Tona Gelap #2a2b2e and their tints.
+     Red and amber are kept only as status colours. */
   :root {
-    --bg: #f3f5f8; --surface: #ffffff; --sunken: #eef1f5; --line: #dde3ea; --fg: #17202b; --muted: #5d6b7c;
-    --accent: #2563c9; --accent-fg: #ffffff; --accent2: #0f8a7e;
-    --ok: #16803c; --warn: #b26a00; --bad: #c62828;
-    --ok-bg: #e3f4e8; --warn-bg: #fdf0dc; --bad-bg: #fbe4e4; --info-bg: #e4ecfa; --mute-bg: #eceff3;
+    --bg: #f8fcf6; --surface: #ffffff; --sunken: #f0f9ec; --line: #e6e6e6; --fg: #2a2b2e; --muted: #6a6b6d;
+    --accent: #0d6636; --accent-fg: #ffffff; --accent2: #4a9437; --brand: #52de56; --brand-tint: #e3f3da;
+    --ok: #0d6636; --warn: #945800; --bad: #c62828;
+    --ok-bg: #e3f3da; --warn-bg: #fdf0dc; --bad-bg: #fbe4e4; --info-bg: #eaeaea; --info-fg: #2a2b2e; --mute-bg: #eaeaea;
     --font: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
     --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
   }
   @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
-    --bg: #0e141b; --surface: #17202b; --sunken: #121a23; --line: #273342; --fg: #e4eaf1; --muted: #92a1b3;
-    --accent: #6ea4ff; --accent-fg: #0b1420; --accent2: #3cc7b6;
-    --ok: #4ccd78; --warn: #f0a93b; --bad: #ff6b6b;
-    --ok-bg: #133222; --warn-bg: #3a2a10; --bad-bg: #3d1616; --info-bg: #182a47; --mute-bg: #222c38;
+    --bg: #1d1e20; --surface: #2a2b2e; --sunken: #232427; --line: #4d4d4d; --fg: #f4f4f5; --muted: #bfc0c0;
+    --accent: #6ebe46; --accent-fg: #000000; --accent2: #52de56; --brand: #52de56; --brand-tint: #1f3d2a;
+    --ok: #86e889; --warn: #f0a93b; --bad: #ff6b6b;
+    --ok-bg: #1f3d2a; --warn-bg: #3a2a10; --bad-bg: #3d1616; --info-bg: #3a3b3e; --info-fg: #f4f4f5; --mute-bg: #3a3b3e;
     color-scheme: dark;
   } }
   :root[data-theme="dark"] {
-    --bg: #0e141b; --surface: #17202b; --sunken: #121a23; --line: #273342; --fg: #e4eaf1; --muted: #92a1b3;
-    --accent: #6ea4ff; --accent-fg: #0b1420; --accent2: #3cc7b6;
-    --ok: #4ccd78; --warn: #f0a93b; --bad: #ff6b6b;
-    --ok-bg: #133222; --warn-bg: #3a2a10; --bad-bg: #3d1616; --info-bg: #182a47; --mute-bg: #222c38;
+    --bg: #1d1e20; --surface: #2a2b2e; --sunken: #232427; --line: #4d4d4d; --fg: #f4f4f5; --muted: #bfc0c0;
+    --accent: #6ebe46; --accent-fg: #000000; --accent2: #52de56; --brand: #52de56; --brand-tint: #1f3d2a;
+    --ok: #86e889; --warn: #f0a93b; --bad: #ff6b6b;
+    --ok-bg: #1f3d2a; --warn-bg: #3a2a10; --bad-bg: #3d1616; --info-bg: #3a3b3e; --info-fg: #f4f4f5; --mute-bg: #3a3b3e;
     color-scheme: dark;
   }
 
@@ -39,6 +41,7 @@
   *, *::before, *::after { box-sizing: border-box; }
   body {
     margin: 0;
+    border-top: 4px solid var(--brand);
     background: var(--bg); color: var(--fg); font-family: var(--font); font-size: 14px;
     padding-block: 20px 32px;
     padding-left: max(16px, env(safe-area-inset-left, 0px));
@@ -103,7 +106,7 @@
   .p-ok { color: var(--ok); background: var(--ok-bg); }
   .p-warn { color: var(--warn); background: var(--warn-bg); }
   .p-bad { color: var(--bad); background: var(--bad-bg); }
-  .p-info { color: var(--accent); background: var(--info-bg); }
+  .p-info { color: var(--info-fg); background: var(--info-bg); }
   .p-mute { color: var(--muted); background: var(--mute-bg); }
   .rating { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 6px; font-family: var(--mono); font-weight: 500; }
 
@@ -188,7 +191,7 @@
   .ov-stats div { display: grid; }
   .ov-stats b { font-family: var(--mono); font-size: 20px; font-weight: 500; font-variant-numeric: tabular-nums; }
   .ov-stats span { color: var(--muted); font-size: 12px; }
-  .ov-goal { background: var(--info-bg); border-radius: 8px; padding: 14px 16px; display: grid; gap: 6px; align-content: center; }
+  .ov-goal { background: var(--brand-tint); border-radius: 8px; padding: 14px 16px; display: grid; gap: 6px; align-content: center; }
   .ov-goal p { margin: 0; font-size: 15px; font-weight: 600; line-height: 1.45; text-wrap: balance; }
   .ov-card p, .ov-lead-card p { margin: 0; line-height: 1.55; }
   .ov-lead-card { border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; display: grid; gap: 6px; align-content: start; }
@@ -200,7 +203,7 @@
   .journey li.done::before { background: var(--accent2); }
   .j-dot { position: relative; z-index: 1; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-family: var(--mono); font-weight: 500; background: var(--surface); border: 2px solid var(--line); color: var(--muted); }
   .journey li.done .j-dot { background: var(--accent2); border-color: var(--accent2); color: var(--surface); }
-  .journey li.now .j-dot { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); box-shadow: 0 0 0 4px var(--info-bg); }
+  .journey li.now .j-dot { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); box-shadow: 0 0 0 4px var(--brand-tint); }
   .j-body { display: grid; gap: 2px; font-size: 13px; }
   .j-when { font-size: 11px; color: var(--muted); font-family: var(--mono); }
   .j-sub { color: var(--muted); font-size: 12px; }
@@ -229,7 +232,7 @@
   @media (max-width: 520px) { .act-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   .act-card { min-width: 0; overflow-wrap: anywhere; text-align: left; border: 1px solid var(--line); border-left: 3px solid var(--line); border-radius: 8px; padding: 10px 12px; background: var(--surface); cursor: pointer; display: grid; gap: 2px; font: inherit; color: inherit; }
   .act-card:hover { background: var(--sunken); }
-  .act-card[aria-pressed="true"] { background: var(--info-bg); border-color: var(--accent); }
+  .act-card[aria-pressed="true"] { background: var(--brand-tint); border-color: var(--accent); }
   .act-card.bad { border-left-color: var(--bad); } .act-card.warn { border-left-color: var(--warn); } .act-card.ok { border-left-color: var(--ok); }
   .act-card .n { font-family: var(--mono); font-size: 24px; font-weight: 500; font-variant-numeric: tabular-nums; }
   .act-card .t { font-weight: 600; font-size: 13px; }
@@ -267,7 +270,7 @@
   .ptl .dot { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--line); background: var(--surface); display: grid; place-items: center; font-size: 11px; color: var(--muted); position: relative; z-index: 1; }
   .ptl li.done .dot { background: var(--ok); border-color: var(--ok); color: var(--surface); }
   .ptl li.open .dot { border-color: var(--bad); color: var(--bad); }
-  .ptl li.next .dot { border-color: var(--accent); background: var(--info-bg); color: var(--accent); }
+  .ptl li.next .dot { border-color: var(--accent); background: var(--brand-tint); color: var(--accent); }
   .ptl .what { font-weight: 600; font-size: 13px; }
   .ptl .when { font-size: 12px; color: var(--muted); }
   .kv { margin: 0; display: grid; grid-template-columns: minmax(110px, auto) minmax(0, 1fr); gap: 6px 12px; font-size: 13px; }

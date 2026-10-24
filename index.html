@@ -34,7 +34,10 @@
     color-scheme: dark;
   }
 
+  [hidden] { display: none !important; }
+  *, *::before, *::after { box-sizing: border-box; }
   body {
+    margin: 0;
     background: var(--bg); color: var(--fg); font-family: var(--font); font-size: 14px;
     padding-block: 20px 32px;
     padding-left: max(16px, env(safe-area-inset-left, 0px));
@@ -58,6 +61,10 @@
   .label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; font-weight: 500; }
   .note { color: var(--muted); font-size: 12px; }
   .banner { background: var(--warn-bg); color: var(--warn); border-radius: 8px; padding: 10px 12px; font-size: 13px; }
+  .localrow { display: flex; gap: 12px 16px; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+  .localtext { display: grid; gap: 4px; flex: 1 1 320px; min-width: 0; }
+  .localactions { display: flex; gap: 8px; flex-wrap: wrap; }
+  label.btn { display: inline-block; }
   .formula { font-size: 12px; color: var(--muted); background: var(--sunken); border-radius: 8px; padding: 10px 12px; line-height: 1.5; }
 
   .btn { border: 1px solid var(--line); background: var(--surface); padding: 7px 12px; border-radius: 7px; cursor: pointer; font-weight: 500; }
@@ -165,6 +172,21 @@
   </div>
 
   <div class="banner" id="dbBanner" hidden></div>
+
+  <section class="panel" id="localBar" hidden>
+    <div class="localrow">
+      <div class="localtext">
+        <h2 id="localTitle">Muatkan Master List ETP</h2>
+        <div class="note" id="localNote">Pilih fail Excel Master List ETP (.xlsx) atau CSV yang dimuat turun dari portal ini. Fail dibaca dalam browser anda sahaja. Ia tidak dimuat naik atau dihantar ke mana-mana.</div>
+      </div>
+      <div class="localactions">
+        <label class="btn primary" for="fileIn" id="fileLabel">Pilih fail…</label>
+        <input type="file" id="fileIn" accept=".xlsx,.xls,.csv" hidden>
+        <button class="btn" type="button" id="clearBtn" hidden>Kosongkan data</button>
+      </div>
+    </div>
+    <div class="error" id="localError" hidden></div>
+  </section>
 
   <!-- RINGKASAN -->
   <section id="view-ringkasan" class="stack">
@@ -354,6 +376,7 @@
   const titleCase = s => String(s || '').toLowerCase().replace(/(^|[\s(\/&-])(\p{L})/gu, (m, a, b) => a + b.toUpperCase()).replace(/\bDan\b/g, 'dan').replace(/\bBin\b/g, 'bin').replace(/\bBinti\b/g, 'binti').replace(/\bBte\b/g, 'bte').replace(/\bPuk\/Kpe\b/g, 'PUK/KPE');
 
   let db = null, userApi = null, downloads = null, myId = null, canWrite = true;
+  let mode = 'connecting', store = null;   // mode: 'connecting' | 'db' (claude.ai) | 'local' (fail dalam browser)
   let talents = [];
   let editingId = null;
 
@@ -370,23 +393,20 @@
     try { history.replaceState(null, '', '#' + v); } catch (_) {}
     showView(v);
   }));
-  showView(location.hash.slice(1));
 
   /* ---------- Carta siri ---------- */
-  const seriesChart = new Chart($('seriesChart'), {
+  const hasChart = typeof window.Chart === 'function';   // carta dilangkau jika Chart.js gagal dimuatkan
+  const seriesChart = hasChart ? new Chart($('seriesChart'), {
     type: 'bar',
     data: { labels: ['Siri 1', 'Siri 2', 'Siri 3', 'Siri 4', 'Siri 5', 'Belum hadir'], datasets: [{ label: 'Peserta', data: [], borderRadius: 4, maxBarThickness: 44 }] },
     options: { animation: false, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: {} }, plugins: { legend: { display: false } } }
-  });
+  }) : null;
   function themeChart(ch, colors) {
-    const fg = css('--muted'), line = css('--line');
+    if (!ch) return;
+    // Warna teks dan garisan grid diambil daripada token tema melalui default Chart.js
+    Chart.defaults.color = css('--muted');
+    Chart.defaults.borderColor = css('--line');
     ch.data.datasets.forEach((d, i) => { d.borderColor = colors[i]; d.backgroundColor = d.fill ? colors[i] + '22' : colors[i]; });
-    for (const ax of ['x', 'y']) {
-      ch.options.scales[ax].ticks = Object.assign(ch.options.scales[ax].ticks || {}, { color: fg });
-      ch.options.scales[ax].grid = { color: line };
-      ch.options.scales[ax].border = { color: line };
-    }
-    if (ch.options.plugins.legend) ch.options.plugins.legend.labels = Object.assign(ch.options.plugins.legend.labels || {}, { color: css('--fg') });
     ch.update();
   }
   let mChart = null;
@@ -458,8 +478,7 @@
     // Siri
     const s = [1, 2, 3, 4, 5].map(k => talents.filter(t => Number(t.series) === k).length);
     s.push(n - s.reduce((a, b) => a + b, 0));
-    seriesChart.data.datasets[0].data = s;
-    seriesChart.update();
+    if (seriesChart) { seriesChart.data.datasets[0].data = s; seriesChart.update(); }
 
     // Pembentangan terkini
     const pres = talents.filter(t => t.presentationDate).sort((a, b) => b.presentationDate.localeCompare(a.presentationDate)).slice(0, 8);
@@ -518,9 +537,11 @@
     const empty = $('emptyList');
     if (!talents.length) {
       empty.hidden = false;
-      empty.innerHTML = db
+      empty.innerHTML = mode === 'db'
         ? `<strong>Belum ada talent</strong><span>Tambah talent pertama atau minta Claude import Master List ETP.</span>`
-        : `<strong>Sedang menyambung ke pangkalan data…</strong><span>Senarai talent akan dipaparkan di sini.</span>`;
+        : mode === 'local'
+          ? `<strong>Belum ada data</strong><span>Pilih fail Master List ETP di bahagian atas untuk memaparkan senarai talent.</span>`
+          : `<strong>Sedang menyambung ke pangkalan data…</strong><span>Senarai talent akan dipaparkan di sini.</span>`;
     } else if (!list.length) {
       empty.hidden = false;
       empty.innerHTML = '<strong>Tiada talent sepadan</strong><span>Cuba kata kunci lain atau kosongkan penapis.</span>';
@@ -574,7 +595,7 @@
     $('delArea').innerHTML = '<span class="confirm">Padam talent ini? <button class="btn danger" type="button" id="delYes">Ya, padam</button><button class="btn" type="button" id="delNo">Tidak</button></span>';
     $('delNo').onclick = () => { $('delArea').innerHTML = '<button class="btn danger" type="button" id="delBtn">Padam</button>'; $('delBtn').onclick = askDelete; };
     $('delYes').onclick = async () => {
-      try { await db.collection('talents').doc(editingId).delete(); $('dlg').close(); toast('Talent dipadam'); }
+      try { await store.remove(editingId); $('dlg').close(); toast('Talent dipadam'); }
       catch (e) { showFormError(e); }
     };
   }
@@ -588,14 +609,14 @@
   $('addBtn').onclick = () => openForm(null);
   $('form').addEventListener('submit', async e => {
     e.preventDefault();
-    if (!db) { showFormError({ message: 'pangkalan data belum bersambung' }); return; }
+    if (!store) { showFormError({ message: 'data belum dimuatkan' }); return; }
     const d = readForm();
     if (!editingId && talents.some(t => t.id === d.staffNo)) { showFormError({ message: `no. staf ${d.staffNo} sudah wujud` }); return; }
     d.updatedAt = Date.now(); d.updatedBy = myId;
     $('saveBtn').disabled = true;
     try {
-      if (editingId) await db.collection('talents').doc(editingId).update(d);
-      else await db.collection('talents').doc(d.staffNo).set({ ...d, source: 'Ditambah melalui portal' });
+      if (editingId) await store.update(editingId, d);
+      else await store.create(d.staffNo, { ...d, source: 'Ditambah melalui portal' });
       $('dlg').close();
       toast(editingId ? 'Perubahan disimpan' : 'Talent ditambah');
     } catch (err) { showFormError(err); }
@@ -613,14 +634,20 @@
     const cell = v => { const s = v === true ? 'Yes' : v === false ? 'No' : String(v ?? ''); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
     const list = filtered();
     const csv = '﻿' + [cols.map(c => c[0]).concat('TAHAP').join(',')].concat(list.map(t => cols.map(c => cell(t[c[1]])).concat(cell(stageOf(t)[0])).join(','))).join('\r\n');
-    try { await downloads.save({ filename: `ETP-2026-talent-${new Date().toISOString().slice(0, 10)}.csv`, data: new Blob([csv], { type: 'text/csv' }) }); }
+    const filename = `ETP-2026-talent-${new Date().toISOString().slice(0, 10)}.csv`, blob = new Blob([csv], { type: 'text/csv' });
+    if (!downloads) {
+      // Di luar claude.ai (cth. GitHub Pages): muat turun biasa melalui pautan
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename;
+      document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      return;
+    }
+    try { await downloads.save({ filename, data: blob }); }
     catch (e) { if (e && e.code !== 'cancelled' && e.code !== 'declined') toast('Muat turun tidak berjaya'); }
   };
 
   /* ---------- Sambungan data ---------- */
-  renderAll(); applyTheme();
-  (async () => {
-    if (!window.claude || !window.claude.use) { dbMissing(); return; }
+  async function connect() {
+    if (!window.claude || !window.claude.use) { enterLocalMode(); return; }
     userApi = await window.claude.use('user');
     if (userApi) {
       try { myId = await userApi.id(); } catch (_) {}
@@ -629,8 +656,15 @@
     }
     $('addBtn').hidden = !canWrite;
     db = await window.claude.use('db');
-    if (!db) { dbMissing(); return; }
-    db.collection('talents').limit(1000).onSnapshot(snap => {
+    if (!db) { enterLocalMode(); return; }
+    mode = 'db';
+    const col = db.collection('talents');
+    store = {
+      update: (id, d) => col.doc(id).update(d),
+      create: (id, d) => col.doc(id).set(d),
+      remove: id => col.doc(id).delete()
+    };
+    col.limit(1000).onSnapshot(snap => {
       talents = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => String(a.name).localeCompare(String(b.name)));
       renderAll();
     }, err => {
@@ -640,21 +674,170 @@
     renderList();
     downloads = await window.claude.use('downloads');
     $('csvBtn').hidden = !downloads;
-  })();
-
-  function dbMissing() {
-    $('dbBanner').hidden = false;
-    $('dbBanner').textContent = 'Data talent tidak tersedia dalam paparan ini. Log masuk ke claude.ai dan buka pautan portal untuk melihat data ETP.';
-    $('addBtn').hidden = true; canWrite = false;
-    renderList();
-    $('emptyList').innerHTML = '<strong>Data talent tidak dapat dimuatkan</strong><span>Log masuk untuk melihat talent pool.</span>';
   }
+
+  /* ---------- Mod fail tempatan (GitHub Pages / fail disimpan) ----------
+     Data dibaca daripada fail Excel/CSV dalam browser dan disimpan dalam localStorage browser ini sahaja. */
+  const LS_KEY = 'etp-talents-v1';
+  function lsRead() { try { return JSON.parse(localStorage.getItem(LS_KEY) || 'null'); } catch (_) { return null; } }
+  function lsWrite(v) { try { if (v) localStorage.setItem(LS_KEY, JSON.stringify(v)); else localStorage.removeItem(LS_KEY); return true; } catch (_) { return false; } }
+  let local = null;   // { fileName, loadedAt, talents: {staffNo: data} }
+
+  function persistLocal() {
+    if (!lsWrite(local)) toast('Perubahan hanya kekal sehingga halaman ditutup');
+    talents = Object.entries(local ? local.talents : {}).map(([id, d]) => ({ id, ...d })).sort((a, b) => String(a.name).localeCompare(String(b.name)));
+    renderLocalBar(); renderAll();
+  }
+
+  function renderLocalBar() {
+    $('localBar').hidden = false;
+    const has = local && Object.keys(local.talents).length;
+    $('localTitle').textContent = has ? `${Object.keys(local.talents).length} talent dimuatkan daripada ${local.fileName}` : 'Muatkan Master List ETP';
+    $('localNote').textContent = has
+      ? `Dimuatkan pada ${new Date(local.loadedAt).toLocaleString('ms-MY')}. Data dan suntingan disimpan dalam browser ini sahaja. Guna "Muat turun CSV" di tab Talent untuk simpan perubahan.`
+      : 'Pilih fail Excel Master List ETP (.xlsx) atau CSV yang dimuat turun dari portal ini. Fail dibaca dalam browser anda sahaja. Ia tidak dimuat naik atau dihantar ke mana-mana.';
+    $('fileLabel').textContent = has ? 'Muat fail lain…' : 'Pilih fail…';
+    $('fileLabel').classList.toggle('primary', !has);
+    $('clearBtn').hidden = !has;
+  }
+
+  function enterLocalMode() {
+    mode = 'local'; canWrite = true; downloads = null;
+    $('addBtn').hidden = false; $('csvBtn').hidden = false;
+    store = {
+      update: async (id, d) => { local.talents[id] = { ...local.talents[id], ...d }; persistLocal(); },
+      create: async (id, d) => { if (!local) local = { fileName: 'portal', loadedAt: Date.now(), talents: {} }; local.talents[id] = d; persistLocal(); },
+      remove: async id => { delete local.talents[id]; persistLocal(); }
+    };
+    local = lsRead();
+    persistLocal();
+  }
+
+  let xlsxReady = null;
+  function loadXlsx() {
+    if (window.XLSX) return Promise.resolve();
+    return xlsxReady || (xlsxReady = new Promise((ok, fail) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+      s.onload = ok; s.onerror = () => { xlsxReady = null; fail(new Error('Tidak dapat memuatkan pembaca Excel. Semak sambungan internet.')); };
+      document.head.appendChild(s);
+    }));
+  }
+
+  // Nama lajur dalam Master List ETP dan dalam CSV portal
+  const COLS = {
+    staffNo: ['STAFF NO', 'NO. STAF'], name: ['STAFF NAME', 'NAMA', 'NAMA PESERTA'], email: ['EMAIL', 'EMEL'], title: ['TITLE', 'JAWATAN'],
+    jabatan: ['JABATAN'], bahagian: ['BAHAGIAN'], gred: ['PERSON GRED', 'GRED'], gender: ['JANTINA'],
+    supervisor: ['IMMEDIATE SUPERVISOR', 'PENYELIA'], ketuaBahagian: ['KETUA BAHAGIAN'], ketuaJabatan: ['KETUA JABATAN'],
+    formQ2: ['FORMS (Q2)', 'FORMS Q2'], formQ3: ['FORMS (Q3)', 'FORMS Q3'], formQ4: ['FORMS (Q4)', 'FORMS Q4'], initiative: ['STATUS INITIATIVE', 'STATUS INISIATIF'],
+    stretch1: ['STRETCH 1 (PROCESS IMPROVEMENT)', 'STRETCH 1'], stretch2: ['STRETCH 2 (STRECTH ROLE)', 'STRETCH 2 (STRETCH ROLE)', 'STRETCH 2'],
+    idpAttendance: ['CORE 1 (IDP) ATTENDANCE', 'CORE 1 IDP'], series: ['CORE 1 (IDP) SERIES', 'SIRI'],
+    l3Sv: ['CORE 2 (LEVEL 3) SV FORM', 'L3 SV FORM'], l3Presentation: ['CORE 2 (LEVEL 3) PRESENTATION', 'L3 PEMBENTANGAN'], l3Hod: ['CORE 2 (LEVEL 3) HOD FORM', 'L3 HOD FORM'],
+    presentationDate: ['REMARK (DATE PRESENTATION)', 'TARIKH PEMBENTANGAN']
+  };
+  const BOOL = ['stretch1', 'stretch2', 'idpAttendance', 'l3Sv', 'l3Presentation', 'l3Hod'];
+  const UPPER = ['jabatan', 'bahagian'];
+  const norm = v => String(v ?? '').replace(/\s+/g, ' ').trim();
+  const normH = v => norm(v).toUpperCase();
+  const isYes = v => v === true || /^(yes|ya|y|true|1|✓)$/i.test(norm(v));
+  const isoDate = v => {
+    if (typeof v === 'number' && window.XLSX) { const p = XLSX.SSF.parse_date_code(v); if (p && p.y) return `${p.y}-${String(p.m).padStart(2, '0')}-${String(p.d).padStart(2, '0')}`; }
+    if (v instanceof Date && !isNaN(v)) return `${v.getFullYear()}-${String(v.getMonth() + 1).padStart(2, '0')}-${String(v.getDate()).padStart(2, '0')}`;
+    const s = norm(v); if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+    const m = s.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/); if (m) return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+    return null;
+  };
+
+  function sheetRows(ws) { return XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: null }); }
+  function findHeader(rows) {
+    for (let i = 0; i < Math.min(rows.length, 30); i++) {
+      const h = rows[i].map(normH);
+      if (h.includes('STAFF NO') || h.includes('NO. STAF')) return i;
+    }
+    return -1;
+  }
+
+  function parseWorkbook(wb, fileName) {
+    // Pilih sheet "Status Indicator" jika ada, jika tidak sheet pertama yang ada lajur STAFF NO + penunjuk
+    const names = wb.SheetNames;
+    const ordered = [...names.filter(n => /status indicator/i.test(n)), ...names.filter(n => !/status indicator/i.test(n))];
+    let rows = null, hi = -1;
+    for (const n of ordered) {
+      const r = sheetRows(wb.Sheets[n]); const h = findHeader(r);
+      if (h >= 0 && r[h].map(normH).some(x => COLS.l3Hod.includes(x) || COLS.stretch1.includes(x))) { rows = r; hi = h; break; }
+    }
+    if (!rows) throw new Error('Fail ini tiada sheet dengan lajur STAFF NO dan penunjuk ETP (contohnya sheet "Status Indicator").');
+    const header = rows[hi].map(normH);
+    const idx = {};
+    for (const [k, aliases] of Object.entries(COLS)) { const i = header.findIndex(h => aliases.includes(h)); if (i >= 0) idx[k] = i; }
+    if (idx.staffNo == null || idx.name == null) throw new Error('Lajur STAFF NO atau STAFF NAME tidak dijumpai.');
+
+    // Jantina daripada sheet SIRI 1-5 (jika ada)
+    const gender = {};
+    names.filter(n => /^siri\s*\d/i.test(n)).forEach(n => {
+      const r = sheetRows(wb.Sheets[n]); const h = findHeader(r); if (h < 0) return;
+      const hh = r[h].map(normH), si = hh.findIndex(x => COLS.staffNo.includes(x)), gi = hh.indexOf('JANTINA');
+      if (si < 0 || gi < 0) return;
+      r.slice(h + 1).forEach(row => { const id = normH(row[si]); if (id && row[gi]) gender[id] = normH(row[gi]); });
+    });
+
+    const out = {};
+    rows.slice(hi + 1).forEach(row => {
+      const id = normH(row[idx.staffNo]);
+      if (!id || !/^[A-Z0-9_\-]+$/.test(id)) return;
+      const d = { staffNo: id };
+      for (const k of Object.keys(COLS)) {
+        if (k === 'staffNo' || idx[k] == null) continue;
+        const v = row[idx[k]];
+        if (BOOL.includes(k)) d[k] = isYes(v);
+        else if (k === 'series') { const n = parseInt(norm(v), 10); d[k] = n >= 1 && n <= 5 ? n : null; }
+        else if (k === 'presentationDate') d[k] = isoDate(v);
+        else { const s = norm(v); d[k] = s ? (UPPER.includes(k) ? s.toUpperCase() : s) : null; }
+      }
+      if (!d.gender && gender[id]) d.gender = gender[id];
+      BOOL.forEach(k => { if (d[k] == null) d[k] = false; });
+      d.source = fileName;
+      out[id] = d;
+    });
+    if (!Object.keys(out).length) throw new Error('Tiada baris talent dijumpai dalam fail ini.');
+    return out;
+  }
+
+  $('fileIn').addEventListener('change', async e => {
+    const f = e.target.files && e.target.files[0]; e.target.value = '';
+    if (!f) return;
+    $('localError').hidden = true;
+    $('fileLabel').textContent = 'Membaca fail…';
+    try {
+      await loadXlsx();
+      const buf = await f.arrayBuffer();
+      const wb = XLSX.read(buf, { type: 'array' });
+      const parsed = parseWorkbook(wb, f.name);
+      local = { fileName: f.name, loadedAt: Date.now(), talents: parsed };
+      persistLocal();
+      toast(`${Object.keys(parsed).length} talent dimuatkan`);
+    } catch (err) {
+      $('localError').hidden = false;
+      $('localError').textContent = 'Fail tidak dapat dibaca: ' + (err && err.message || err);
+      renderLocalBar();
+    }
+  });
+
+  $('clearBtn').addEventListener('click', () => {
+    $('clearBtn').hidden = true;
+    const row = document.createElement('span'); row.className = 'confirm';
+    row.innerHTML = 'Buang semua data dari browser ini? <button class="btn danger" type="button">Ya, buang</button><button class="btn" type="button">Tidak</button>';
+    $('clearBtn').after(row);
+    const [yes, no] = row.querySelectorAll('button');
+    no.onclick = () => { row.remove(); $('clearBtn').hidden = false; };
+    yes.onclick = () => { row.remove(); local = null; lsWrite(null); persistLocal(); toast('Data dibuang dari browser ini'); };
+  });
 
   /* ---------- Monitor sistem (data contoh) ---------- */
   let monitorStarted = false, cpu = 42, mem = 55;
   function startMonitor() {
     if (monitorStarted) return; monitorStarted = true;
-    mChart = new Chart($('mChart'), {
+    if (hasChart) mChart = new Chart($('mChart'), {
       type: 'line',
       data: { labels: [], datasets: [
         { label: 'CPU', data: [], tension: 0.3, pointRadius: 0, borderWidth: 2, fill: true },
@@ -678,13 +861,19 @@
     set('cpu', cpu + '%', level(cpu, 70, 85)); set('mem', mem + '%', level(mem, 75, 85));
     set('rpm', rand(800, 1500).toLocaleString('ms-MY'), null); set('err', String(errs), level(errs, 5, 8));
     const now = new Date().toLocaleTimeString('ms-MY'); $('mUpdate').textContent = now;
-    mChart.data.labels.push(now); mChart.data.datasets[0].data.push(cpu); mChart.data.datasets[1].data.push(mem);
-    if (mChart.data.labels.length > 20) { mChart.data.labels.shift(); mChart.data.datasets.forEach(d => d.data.shift()); }
-    mChart.update();
+    if (mChart) {
+      mChart.data.labels.push(now); mChart.data.datasets[0].data.push(cpu); mChart.data.datasets[1].data.push(mem);
+      if (mChart.data.labels.length > 20) { mChart.data.labels.shift(); mChart.data.datasets.forEach(d => d.data.shift()); }
+      mChart.update();
+    }
     const st = () => { const r = Math.random(); return r > 0.15 ? ['UP', 'p-ok'] : r > 0.05 ? ['SLOW', 'p-warn'] : ['DOWN', 'p-bad']; };
     $('mServices').innerHTML = [['Web', 20, 200], ['API', 30, 300], ['Database', 5, 80], ['Cache', 1, 20]].map(([n, a, b]) => {
       const [l, c] = st(); return `<tr><td>${n}</td><td><span class="pill ${c}">${l}</span></td><td class="num">${rand(a, b)} ms</td></tr>`; }).join('');
   }
+
+  renderAll(); applyTheme();
+  connect();
+  showView(location.hash.slice(1));
 </script>
 
 </body>

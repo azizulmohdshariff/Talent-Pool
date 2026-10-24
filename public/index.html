@@ -286,6 +286,8 @@
   .act-mini .pill { white-space: normal; max-width: 100%; }
   a.tlink, button.tlink { color: inherit; text-decoration: none; border: 0; background: none; padding: 0; font: inherit; cursor: pointer; text-align: left; }
   a.tlink:hover .who, button.tlink:hover .who { color: var(--accent); text-decoration: underline; }
+  .chk { display: inline-flex; gap: 8px; align-items: center; font-size: 13px; color: var(--muted); cursor: pointer; }
+  .chk input { width: 16px; height: 16px; accent-color: var(--accent); }
   .export-bar { display: flex; justify-content: flex-end; align-items: center; gap: 8px 12px; flex-wrap: wrap; }
   /* Overview infographic */
   .ico { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
@@ -810,6 +812,10 @@
 
   <!-- HARRISON -->
   <section id="view-harrison" class="stack" hidden>
+    <div class="export-bar">
+      <label class="chk"><input type="checkbox" id="hPdfInd"> Include individual scores (Red list and full heatmap)</label>
+      <button class="btn primary" type="button" id="hPdfBtn" hidden>Download PDF report</button>
+    </div>
     <div class="kpis">
       <div class="panel kpi accent"><div class="label">Assessed</div><div class="value" id="hAssessed">-</div><div class="note">Harrison Assessment, Dec 2025</div></div>
       <div class="panel kpi" id="hAvgCard"><div class="label">Average overview score</div><div class="value" id="hAvg">-</div><div class="note">Emerging Leader Overview, out of 100</div></div>
@@ -2154,6 +2160,181 @@
     return doc.output('blob');
   }
 
+  /* ---------- Harrison PDF report ---------- */
+  async function exportHarrisonPdf() {
+    if (!talents.some(hasH)) { toast('Import the Harrison results first'); return; }
+    const btn = $('hPdfBtn'), label = btn.textContent; btn.disabled = true; btn.textContent = 'Preparing PDF…';
+    try {
+      await loadPdf();
+      const withTalents = $('hPdfInd').checked;
+      await saveBlob(`ETP-2026-Harrison-report${withTalents ? '-individual' : ''}-${new Date().toISOString().slice(0, 10)}.pdf`, buildHarrisonPdf(withTalents));
+    } catch (e) { toast(e && e.message ? e.message : 'PDF could not be created'); }
+    finally { btn.disabled = false; btn.textContent = label; }
+  }
+  $('hPdfBtn').addEventListener('click', exportHarrisonPdf);
+
+  function buildHarrisonPdf(withTalents) {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const W = 210, M = 14, CW = W - 2 * M;
+    const C = { green: [13, 102, 54], mid: [74, 148, 55], logo: [82, 222, 86], tint: [227, 243, 218], ink: [42, 43, 46], muted: [106, 107, 109], line: [230, 230, 230], bad: [198, 40, 40], warn: [148, 88, 0], ok: [13, 102, 54] };
+    const BG = { g: [227, 243, 218], y: [253, 240, 220], r: [251, 228, 228] }, FG = { g: C.ok, y: C.warn, r: C.bad };
+    const P = s => pdfText(s);
+    const all = talents.filter(hasH), n = all.length;
+    const a = avg(all, 'hOverview');
+    const cats = ['Red', 'Yellow', 'Green'].map(c => ({ c, n: all.filter(t => t.hCat === c).length }));
+    const avgs = COMPS.map(c => ({ ...c, v: avg(all, c.k) })).sort((x, y) => x.v - y.v);
+    const today = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+    const head = { fillColor: C.green, textColor: 255, fontStyle: 'bold', fontSize: 8 };
+    const body = { fontSize: 8.5, textColor: C.ink, cellPadding: 1.2, lineColor: C.line, lineWidth: 0.1 };
+    const title = (txt, y, sz = 11) => { doc.setFont('helvetica', 'bold'); doc.setFontSize(sz); doc.setTextColor(...C.ink); doc.text(P(txt), M, y); };
+
+    // ---- Page 1
+    doc.setTextColor(...C.green); doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.text('EMERGING TALENT PROGRAM (ETP) 2026', M, 13);
+    doc.setTextColor(...C.ink); doc.setFontSize(18); doc.text('Harrison Assessment Report', M, 21);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...C.muted);
+    doc.text(P(`Emerging Leader competency assessment | ${n} talent assessed | generated ${today}`), M, 27);
+    let y = 33;
+
+    const tiles = [['ASSESSED', `${n} / ${talents.length}`, 'talent with Harrison results', C.green],
+      ['AVERAGE OVERVIEW', a.toFixed(1), 'Emerging Leader Overview, out of 100', FG[oBand(a)]],
+      ['RED CATEGORY', String(cats[0].n), `${fmtPct(pct(cats[0].n, n))} need committee decision`, C.bad],
+      ['WEAKEST COMPETENCY', avgs[0].name, `average ${avgs[0].v.toFixed(1)} of 10`, C.warn]];
+    const tw = (CW - 3 * 4) / 4;
+    tiles.forEach(([lab, val, note, col], i) => {
+      const x = M + i * (tw + 4);
+      doc.setDrawColor(...C.line); doc.setFillColor(255, 255, 255); doc.roundedRect(x, y, tw, 24, 1.5, 1.5, 'FD');
+      doc.setFillColor(...col); doc.rect(x, y, 1.2, 24, 'F');
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(7); doc.setTextColor(...C.muted); doc.text(P(lab), x + 4, y + 6);
+      doc.setFontSize(i === 3 ? 9.5 : 15); doc.setTextColor(...C.ink); doc.text(doc.splitTextToSize(P(val), tw - 6), x + 4, y + (i === 3 ? 12 : 14));
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(...C.muted); doc.text(doc.splitTextToSize(P(note), tw - 6), x + 4, y + 20);
+    });
+    y += 30;
+
+    const withLow = all.filter(t => COMPS.some(c => t[c.k] < 5.95)).length;
+    const pot = [3, 2, 1].map(k => all.filter(t => hPotential(t) === k).length);
+    const points = [
+      `Average Emerging Leader Overview is ${a.toFixed(1)} out of 100. ${cats[2].n} talent (${fmtPct(pct(cats[2].n, n))}) are in the Green category, ${cats[1].n} in Yellow and ${cats[0].n} in Red.`,
+      `Lowest competencies: ${avgs.slice(0, 3).map(c => `${c.name} (${c.v.toFixed(1)})`).join(', ')}. Strongest: ${avgs.slice(-2).reverse().map(c => `${c.name} (${c.v.toFixed(1)})`).join(', ')}.`,
+      `${cats[0].n} talent in the Red category need a committee decision: stay in the programme, or follow a tailored multi-competency development plan.`,
+      `${withLow} of ${n} talent (${fmtPct(pct(withLow, n))}) score below 6.0 in at least one competency. Potential for the 9-Box: ${pot[0]} High, ${pot[1]} Moderate, ${pot[2]} Low.`
+    ];
+    title('Key points', y + 4); y += 7;
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
+    const ptLines = points.map(pt => doc.splitTextToSize(P(pt), CW - 10));
+    const boxH = ptLines.reduce((h, l) => h + l.length * 4.2 + 1.5, 4);
+    doc.setFillColor(...C.tint); doc.roundedRect(M, y, CW, boxH, 1.5, 1.5, 'F');
+    let py = y + 6;
+    ptLines.forEach(lines => { doc.setFillColor(...C.green); doc.circle(M + 4, py - 1.2, 0.8, 'F'); doc.setTextColor(...C.ink); doc.text(lines, M + 7, py); py += lines.length * 4.2 + 1.5; });
+    y += boxH + 8;
+
+    title('Indicator category', y); y += 4;
+    const segCol = { Red: [198, 40, 40], Yellow: [214, 150, 20], Green: [13, 102, 54] };
+    let x0 = M;
+    cats.forEach(c => { const w = CW * pct(c.n, n); if (!w) return; doc.setFillColor(...segCol[c.c]); doc.rect(x0, y, w, 8, 'F');
+      doc.setTextColor(255, 255, 255); doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.text(`${c.c} ${c.n}`, x0 + w / 2, y + 5.4, { align: 'center' }); x0 += w; });
+    y += 12;
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...C.muted);
+    doc.text(P('Category = 50% or more of a talent\'s indicators are red, yellow or green (as classified in the HCC deck).'), M, y); y += 8;
+
+    title('Competency averages (lowest first)', y); y += 5;
+    const lx = M, bx = M + 66, bw = CW - 66 - 14, rowH = 7;
+    avgs.forEach((c, i) => {
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...C.ink); doc.text(P(c.name), lx, y + 4);
+      doc.setFontSize(7); doc.setTextColor(...C.muted); doc.text(c.g, lx + 52, y + 4);
+      doc.setFillColor(...C.line); doc.roundedRect(bx, y, bw, 4.8, 1, 1, 'F');
+      const b = hBand(c.v); doc.setFillColor(...(b === 'g' ? C.ok : b === 'y' ? [214, 150, 20] : C.bad)); doc.roundedRect(bx, y, Math.max(1, bw * c.v / 10), 4.8, 1, 1, 'F');
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(...C.ink); doc.text(c.v.toFixed(1), bx + bw + 3, y + 4);
+      y += rowH;
+    });
+    // thresholds
+    doc.setDrawColor(...C.muted); doc.setLineWidth(0.2); doc.setLineDashPattern([1, 1], 0);
+    [6, 7.5].forEach(v => { const xx = bx + bw * v / 10; doc.line(xx, y - rowH * 10 - 1, xx, y); });
+    doc.setLineDashPattern([], 0);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(...C.muted);
+    doc.text('Dashed lines: 6.0 and 7.5 (Red below 6.0, Yellow 6.0-7.4, Green 7.5 and above).', bx, y + 3);
+
+    // ---- Page 2: departments and groups
+    doc.addPage(); y = 14;
+    title('Department / division comparison', y); y += 2;
+    const m = new Map(); all.forEach(t => { const u = unitOf(t); if (!m.has(u)) m.set(u, []); m.get(u).push(t); });
+    const deptRows = [...m.entries()].sort((x, z) => avg(x[1], 'hOverview') - avg(z[1], 'hOverview')).map(([u, l]) => {
+      const av = avg(l, 'hOverview'), weak = COMPS.map(c => ({ ...c, v: avg(l, c.k) })).sort((x, z) => x.v - z.v)[0], c = k => l.filter(t => t.hCat === k).length;
+      return [P(titleCase(u)), l.length, av.toFixed(1), c('Red') || '-', c('Yellow') || '-', c('Green') || '-', P(`${weak.name} (${weak.v.toFixed(1)})`)];
+    });
+    deptRows.push(['Corporate', n, a.toFixed(1), cats[0].n, cats[1].n, cats[2].n, P(`${avgs[0].name} (${avgs[0].v.toFixed(1)})`)]);
+    doc.autoTable({ startY: y, margin: { left: M, right: M }, headStyles: head, styles: body, theme: 'grid',
+      head: [['Department / division', 'Talent', 'Avg overview', 'Red', 'Yellow', 'Green', 'Weakest competency']], body: deptRows,
+      columnStyles: { 0: { cellWidth: 58 }, 1: { halign: 'right', cellWidth: 14 }, 2: { halign: 'right', cellWidth: 20 }, 3: { halign: 'center', cellWidth: 12 }, 4: { halign: 'center', cellWidth: 13 }, 5: { halign: 'center', cellWidth: 13 } },
+      didParseCell: d => {
+        if (d.section !== 'body') return;
+        if (d.row.index === deptRows.length - 1) { d.cell.styles.fontStyle = 'bold'; d.cell.styles.fillColor = C.tint; }
+        if (d.column.index === 2) { const b = oBand(Number(d.cell.raw)); d.cell.styles.textColor = FG[b]; d.cell.styles.fontStyle = 'bold'; }
+        if (d.column.index === 3 && d.cell.raw !== '-') d.cell.styles.textColor = C.bad;
+      } });
+    y = doc.lastAutoTable.finalY + 9;
+
+    title('Competency groups (FAITH and IHSAN)', y); y += 2;
+    const GL = { F: 'F: Forward-Looking', A: 'A: Agile', I: 'I: Innovation', T: 'T: Teamwork', H: 'H: High Performance', IHSAN: 'IHSAN: Ihsan Leadership' };
+    const grpRows = Object.keys(GL).map(g => { const cs = COMPS.filter(c => c.g === g), v = cs.reduce((s2, c) => s2 + avg(all, c.k), 0) / cs.length; return [GL[g], P(cs.map(c => c.name).join(', ')), v.toFixed(1)]; });
+    doc.autoTable({ startY: y, margin: { left: M, right: M }, headStyles: head, styles: body, theme: 'grid',
+      head: [['Group', 'Competencies', 'Average']], body: grpRows, columnStyles: { 0: { cellWidth: 46 }, 2: { halign: 'right', cellWidth: 20 } },
+      didParseCell: d => { if (d.section === 'body' && d.column.index === 2) { d.cell.styles.textColor = FG[hBand(Number(d.cell.raw))]; d.cell.styles.fontStyle = 'bold'; } } });
+    y = doc.lastAutoTable.finalY + 9;
+
+    title('Competency scores by category', y); y += 2;
+    const catRows = COMPS.map(c => [P(c.name), ...['Red', 'Yellow', 'Green'].map(k => { const l = all.filter(t => t.hCat === k); return l.length ? avg(l, c.k).toFixed(1) : '-'; }), avg(all, c.k).toFixed(1)]);
+    doc.autoTable({ startY: y, margin: { left: M, right: M }, headStyles: head, styles: body, theme: 'grid',
+      head: [['Competency', `Red (${cats[0].n})`, `Yellow (${cats[1].n})`, `Green (${cats[2].n})`, 'All']], body: catRows,
+      columnStyles: { 0: { cellWidth: 62 }, 1: { halign: 'right' }, 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'right', fontStyle: 'bold' } },
+      didParseCell: d => { if (d.section === 'body' && d.column.index > 0 && d.cell.raw !== '-') d.cell.styles.textColor = FG[hBand(Number(d.cell.raw))]; } });
+
+    // ---- Individual pages (optional)
+    if (withTalents) {
+      const talentTable = (list, compact) => {
+        const rows = list.map((t, i) => [i + 1, t.staffNo, P(titleCase(t.name)) + (compact ? '' : '\n' + P(titleCase(unitOf(t)))), t.hCat, t.hOverview.toFixed(0), ...COMPS.map(c => t[c.k].toFixed(1))]);
+        doc.autoTable({ startY: doc.__ty, margin: { left: M, right: M }, headStyles: { ...head, fontSize: 7, halign: 'center' }, theme: 'grid',
+          styles: { fontSize: compact ? 7.2 : 7.8, textColor: C.ink, cellPadding: compact ? 1 : 1.5, lineColor: C.line, lineWidth: 0.1, halign: 'center', valign: 'middle' },
+          head: [['#', 'Staff', 'Talent', 'Cat.', 'Ovw', ...COMPS.map(c => c.short)]], body: rows,
+          columnStyles: { 0: { cellWidth: 7 }, 1: { cellWidth: 13 }, 2: { halign: 'left', cellWidth: 54 }, 3: { cellWidth: 13 }, 4: { cellWidth: 11 } },
+          didParseCell: d => {
+            if (d.section !== 'body' || d.column.index < 3) return;
+            let b;
+            if (d.column.index === 3) { b = { Red: 'r', Yellow: 'y', Green: 'g' }[d.cell.raw]; }
+            else if (d.column.index === 4) b = oBand(Number(d.cell.raw));
+            else b = hBand(Number(d.cell.raw));
+            if (b) { d.cell.styles.fillColor = BG[b]; d.cell.styles.textColor = FG[b]; d.cell.styles.fontStyle = 'bold'; }
+          } });
+      };
+      const legend = yy => { doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(...C.muted);
+        doc.text(doc.splitTextToSize(P('Ovw = Emerging Leader Overview (green >= 75, yellow 60-74, red < 60). ' + COMPS.map(c => `${c.short} ${c.name}`).join(' | ') + '. Competency scores out of 10: green >= 7.5, yellow 6.0-7.4, red < 6.0.'), CW), M, yy); };
+
+      doc.addPage(); y = 14;
+      const reds = all.filter(t => t.hCat === 'Red').sort((x, z) => x.hOverview - z.hOverview);
+      title(`Committee decision list: Red category (${reds.length})`, y);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(...C.muted);
+      doc.text(doc.splitTextToSize(P('Talent with 50% or more red indicators. The committee decides whether they remain in the programme or follow a tailored multi-competency development plan.'), CW), M, y + 5);
+      doc.__ty = y + 14; talentTable(reds, false);
+      legend(doc.lastAutoTable.finalY + 5);
+
+      doc.addPage(); y = 14;
+      title(`Full competency heatmap (${all.length} talent, lowest overview first)`, y);
+      doc.__ty = y + 4; talentTable(all.slice().sort((x, z) => x.hOverview - z.hOverview || String(x.name).localeCompare(String(z.name))), true);
+      legend(doc.lastAutoTable.finalY + 5);
+    }
+
+    // ---- Strip and footer on every page
+    const pages = doc.getNumberOfPages();
+    for (let i = 1; i <= pages; i++) {
+      doc.setPage(i); doc.setFillColor(...C.logo); doc.rect(0, 0, W, 3, 'F');
+      doc.setDrawColor(...C.line); doc.line(M, 286, W - M, 286);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(...C.muted);
+      doc.text(P(`ETP Portal | Harrison Assessment report | ${today}` + (withTalents ? ' | CONFIDENTIAL: individual assessment scores' : '')), M, 290);
+      doc.text(`Page ${i} of ${pages}`, W - M, 290, { align: 'right' });
+    }
+    return doc.output('blob');
+  }
+
   /* ---------- Sambungan data ---------- */
   async function connect() {
     if (!window.claude || !window.claude.use) { enterLocalMode(); return; }
@@ -2182,7 +2363,7 @@
     });
     renderList();
     downloads = await window.claude.use('downloads');
-    $('csvBtn').hidden = !downloads; $('actCsvBtn').hidden = !downloads; document.querySelectorAll('.pdfBtn').forEach(b => { b.hidden = !downloads; });
+    $('csvBtn').hidden = !downloads; $('actCsvBtn').hidden = !downloads; document.querySelectorAll('.pdfBtn').forEach(b => { b.hidden = !downloads; }); $('hPdfBtn').hidden = !downloads;
   }
 
   /* ---------- Mod fail tempatan (GitHub Pages / fail disimpan) ----------
@@ -2212,7 +2393,7 @@
 
   function enterLocalMode() {
     mode = 'local'; canWrite = true; downloads = null;
-    $('addBtn').hidden = false; $('csvBtn').hidden = false; $('actCsvBtn').hidden = false; document.querySelectorAll('.pdfBtn').forEach(b => { b.hidden = false; });
+    $('addBtn').hidden = false; $('csvBtn').hidden = false; $('actCsvBtn').hidden = false; document.querySelectorAll('.pdfBtn').forEach(b => { b.hidden = false; }); $('hPdfBtn').hidden = false;
     store = {
       update: async (id, d) => { local.talents[id] = { ...local.talents[id], ...d }; persistLocal(); },
       create: async (id, d) => { if (!local) local = { fileName: 'portal', loadedAt: Date.now(), talents: {} }; local.talents[id] = d; persistLocal(); },

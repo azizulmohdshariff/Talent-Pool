@@ -153,6 +153,40 @@
 
   .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); background: var(--fg); color: var(--bg); padding: 8px 14px; border-radius: 8px; font-size: 13px; z-index: 20; }
 
+  /* Status KPI */
+  .kpis.three { grid-template-columns: repeat(3, 1fr); }
+  @media (max-width: 760px) { .kpis.three { grid-template-columns: 1fr; } }
+  .tier { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); }
+  .section-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px 16px; flex-wrap: wrap; }
+  .section-head p { margin: 4px 0 0; color: var(--muted); font-size: 13px; max-width: 70ch; }
+  .rbars .bar-row { grid-template-columns: 34px minmax(0, 1fr) 1fr 76px; }
+  .rbars .bar-row .desc { color: var(--muted); font-size: 12px; min-width: 0; }
+  @media (max-width: 560px) { .rbars .bar-row { grid-template-columns: 34px 1fr auto; } .rbars .bar-row .desc { grid-column: 2; grid-row: 1; } .rbars .bar-row .n { grid-column: 3; grid-row: 1; } .rbars .bar-row .bar-track { grid-column: 2 / -1; grid-row: 2; } }
+  .callout { border-left: 3px solid var(--warn); background: var(--warn-bg); color: var(--fg); border-radius: 0 8px 8px 0; padding: 10px 12px; font-size: 13px; }
+  .chips { display: inline-flex; gap: 3px; }
+  .chip { font-family: var(--mono); font-size: 10px; font-weight: 600; padding: 1px 5px; border-radius: 4px; background: var(--mute-bg); color: var(--muted); }
+  .chip.on { background: var(--ok-bg); color: var(--ok); }
+  .sup-scroll { max-height: 520px; overflow-y: auto; border: 1px solid var(--line); border-radius: 8px; }
+  .sup-scroll thead th { position: sticky; top: 0; background: var(--surface); z-index: 1; box-shadow: inset 0 -1px 0 var(--line); }
+  #supRows tr.sup { cursor: pointer; }
+  #supRows tr.sup:hover { background: var(--sunken); }
+  #supRows tr.sup td:first-child::before { content: "▸"; display: inline-block; width: 14px; color: var(--muted); }
+  #supRows tr.sup.open td:first-child::before { content: "▾"; }
+  #supRows tr.detail > td { background: var(--sunken); padding: 8px 12px 10px 26px; }
+  .reports { display: grid; gap: 6px; }
+  .reports div { display: flex; gap: 8px 12px; align-items: center; flex-wrap: wrap; }
+  .reports .rname { flex: 1 1 200px; min-width: 0; }
+  details.ref { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+  details.ref summary { cursor: pointer; font-weight: 600; }
+  details.ref[open] summary { margin-bottom: 10px; }
+  .scale { width: 100%; border-collapse: collapse; }
+  .scale td { padding: 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .scale td:first-child { width: 36px; }
+  .refgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  @media (max-width: 900px) { .refgrid { grid-template-columns: 1fr; } }
+  .refgrid h3 { font-size: 13px; margin: 0 0 6px; }
+  .refgrid p, .refgrid li { font-size: 13px; line-height: 1.5; }
+  .refgrid ul { margin: 0; padding-left: 18px; }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
 
@@ -161,6 +195,7 @@
     <div class="brand"><h1>Talent Pool Portal</h1><small>Emerging Talent Program (ETP) 2026 · KPI 10 Talent Pool Growth Index <span id="whoami"></span></small></div>
     <nav aria-label="Bahagian portal">
       <a href="#ringkasan" data-view="ringkasan">Ringkasan</a>
+      <a href="#kpi" data-view="kpi">Status KPI</a>
       <a href="#talent" data-view="talent">Talent</a>
     </nav>
   </div>
@@ -236,6 +271,107 @@
     </div>
   </section>
 
+  <!-- STATUS KPI -->
+  <section id="view-kpi" class="stack" hidden>
+    <div class="kpis three">
+      <div class="panel kpi" id="kcDept"><div class="tier">Jabatan · Corporate target</div><div class="label">TPG Index</div><div class="value" id="kcDeptVal">-</div><div class="note" id="kcDeptNote"></div></div>
+      <div class="panel kpi" id="kcSup"><div class="tier">Penyelia · Talent Development &amp; Growth Execution</div><div class="label">Penyelia capai rating ≥4</div><div class="value" id="kcSupVal">-</div><div class="note" id="kcSupNote"></div></div>
+      <div class="panel kpi" id="kcTal"><div class="tier">Talent · Personal Growth &amp; Competency Development</div><div class="label">Talent capai sasaran (rating ≥4)</div><div class="value" id="kcTalVal">-</div><div class="note" id="kcTalNote"></div></div>
+    </div>
+    <div class="note">KPI 10 · Learning &amp; Growth (20%) · Optimize Human Capital · wajaran 10% bagi setiap peringkat. Sasaran kumpulan: gred TH4 hingga TH6 (Emerging Talent). Penunjuk dikira daripada data tab Talent.</div>
+
+    <div class="panel">
+      <div class="section-head">
+        <div><h2>KPI Talent</h2><p>Bilangan penunjuk pertumbuhan yang dicapai setiap talent (daripada 4: Core i, Core ii, Stretch i, Stretch ii). Sasaran ialah rating 4: kedua-dua Core dan sekurang-kurangnya 1 Stretch.</p></div>
+      </div>
+      <div class="bars rbars" id="talentRatingBars"></div>
+      <div class="callout" id="talentBlocker" hidden></div>
+    </div>
+
+    <div class="panel">
+      <div class="section-head">
+        <div><h2>KPI Penyelia</h2><p>Dinilai berdasarkan pencapaian penunjuk pertumbuhan oleh talent di bawah seliaan terus. Klik nama penyelia untuk lihat talent di bawahnya.</p></div>
+      </div>
+      <div class="toolbar">
+        <input type="search" id="supQ" placeholder="Cari penyelia atau talent" aria-label="Cari penyelia">
+        <select id="supRating" aria-label="Tapis rating penyelia"><option value="">Semua rating</option><option value="5">Rating 5</option><option value="4">Rating 4</option><option value="3">Rating 3</option><option value="2">Rating 2</option><option value="1">Rating 1</option></select>
+      </div>
+      <div class="note" id="supCount"></div>
+      <div class="table-scroll sup-scroll">
+        <table>
+          <thead><tr><th>Penyelia terus</th><th class="num">Talent</th><th class="num">≥2 penunjuk</th><th class="num">≥3 penunjuk</th><th class="num">4 penunjuk</th><th class="c">Rating</th></tr></thead>
+          <tbody id="supRows"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="section-head">
+        <div><h2>KPI Jabatan</h2><p>TPG Index = talent yang capai 2 Core + ≥1 Stretch (berstatus Verified) ÷ jumlah talent jabatan. Lajur sasaran menunjukkan berapa talent lagi perlu lengkap untuk naik rating.</p></div>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Jabatan / bahagian</th><th class="num">Talent</th><th class="num">Capai</th><th class="num">TPG Index</th><th class="c">Rating</th><th class="num">Lagi untuk rating 4</th><th class="num">Lagi untuk rating 5</th></tr></thead>
+          <tbody id="deptRows"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel">
+      <details class="ref">
+        <summary>Rujukan: skala rating dan definisi penunjuk</summary>
+        <div class="refgrid">
+          <div>
+            <h3>Jabatan: TPG Index</h3>
+            <table class="scale"><tbody>
+              <tr><td><span class="rating pill p-ok">5</span></td><td>≥ 80% TPG Index</td></tr>
+              <tr><td><span class="rating pill p-ok">4</span></td><td>≥ 65% TPG Index</td></tr>
+              <tr><td><span class="rating pill p-warn">3</span></td><td>≥ 50% TPG Index</td></tr>
+              <tr><td><span class="rating pill p-bad">2</span></td><td>≥ 40% TPG Index</td></tr>
+              <tr><td><span class="rating pill p-bad">1</span></td><td>&lt; 40% TPG Index</td></tr>
+            </tbody></table>
+            <p class="note">Dokumen menyatakan rating 1 sebagai &lt; 30%. Portal ikut jalur Master List (&lt; 40%) supaya julat 30–39% tidak tertinggal.</p>
+          </div>
+          <div>
+            <h3>Penyelia: Talent Development &amp; Growth Execution</h3>
+            <table class="scale"><tbody>
+              <tr><td><span class="rating pill p-ok">5</span></td><td>100% talent capai ≥ 4 penunjuk</td></tr>
+              <tr><td><span class="rating pill p-ok">4</span></td><td>100% talent capai ≥ 3 penunjuk</td></tr>
+              <tr><td><span class="rating pill p-warn">3</span></td><td>100% talent capai ≥ 2 penunjuk</td></tr>
+              <tr><td><span class="rating pill p-bad">2</span></td><td>≥ 70% talent capai ≥ 2 penunjuk</td></tr>
+              <tr><td><span class="rating pill p-bad">1</span></td><td>&lt; 70% talent capai ≥ 2 penunjuk</td></tr>
+            </tbody></table>
+          </div>
+          <div>
+            <h3>Talent: Personal Growth &amp; Competency Development</h3>
+            <table class="scale"><tbody>
+              <tr><td><span class="rating pill p-ok">5</span></td><td>Kedua-dua Core + kedua-dua Stretch</td></tr>
+              <tr><td><span class="rating pill p-ok">4</span></td><td>2 Core + 1 Stretch (sasaran)</td></tr>
+              <tr><td><span class="rating pill p-warn">3</span></td><td>2 Core sahaja</td></tr>
+              <tr><td><span class="rating pill p-bad">2</span></td><td>Hanya 1 Core</td></tr>
+              <tr><td><span class="rating pill p-bad">1</span></td><td>Tiada bukti pertumbuhan atau sumbangan extra-mile</td></tr>
+            </tbody></table>
+          </div>
+          <div>
+            <h3>Core (wajib)</h3>
+            <ul>
+              <li><b>Core i: IDP Milestone Completion.</b> Menghadiri program pembangunan HC (AIL Development Program). Disahkan oleh penyelia terus dan Ketua Jabatan/Bahagian; program disediakan dan disahkan oleh GHCD.</li>
+              <li><b>Core ii: Kirkpatrick Level 3, Behavioural Shift.</b> Menilai tingkah laku sebelum dan selepas latihan. Disokong bukti dokumen dan disahkan oleh HCD. Dalam portal ini, Core ii dikira lengkap apabila HOD Form disahkan.</li>
+            </ul>
+          </div>
+          <div>
+            <h3>Stretch i: Productivity / Process Improvement</h3>
+            <p>≥ 1 inisiatif disiapkan, disahkan melalui dokumen dan disokong HOD. Contoh: penambahbaikan aliran kerja, peningkatan kualiti, pengoptimuman sistem digital, pengurangan kos, dokumentasi &amp; standard (SOP, garis panduan), penambahbaikan penyampaian perkhidmatan.</p>
+          </div>
+          <div>
+            <h3>Stretch ii: Stretch Role / Extra-Mile</h3>
+            <p>≥ 1 inisiatif disiapkan, disahkan melalui dokumen dan disokong HOD. Contoh: peranan lebih tinggi daripada skop biasa, penglibatan rentas jabatan, projek khas, inisiatif sukarela di luar waktu kerja, inisiatif tambahan yang memberi nilai kepada TH.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </section>
+
   <!-- TALENT -->
   <section id="view-talent" class="panel" hidden>
     <div class="toolbar">
@@ -261,7 +397,7 @@
           <th>Talent</th><th>Jabatan / bahagian</th><th>Gred</th><th class="c">Siri</th>
           <th class="c" title="Forms Q2 Verified">Q2</th><th class="c" title="Stretch 1: Process Improvement">S1</th><th class="c" title="Stretch 2: Stretch Role">S2</th>
           <th class="c" title="Core 1: IDP Attendance">IDP</th><th class="c" title="Core 2 L3: SV Form">SV</th><th class="c" title="Core 2 L3: Pembentangan">Bentang</th><th class="c" title="Core 2 L3: HOD Form">HOD</th>
-          <th>Tahap</th>
+          <th class="c" title="Rating KPI talent (1-5)">KPI</th><th>Tahap</th>
         </tr></thead>
         <tbody id="rows"></tbody>
       </table>
@@ -347,6 +483,17 @@
   const band = v => v >= .8 ? ['Baik', 'p-ok'] : v >= .5 ? ['Sederhana', 'p-warn'] : ['Perlu tindakan', 'p-bad'];
   const PUK = 'PEJABAT PUK/KPE';
   const unitOf = t => (t.jabatan === PUK && t.bahagian && t.bahagian !== 'PEJABAT PENGARAH URUSAN KUMPULAN DAN KETUA PEGAWAI EKSEKUTIF') ? t.bahagian : (t.jabatan || '-');
+  // Cascade KPI (Revision KPI TPG, Sept 2026)
+  const coreCount = t => (t.idpAttendance ? 1 : 0) + (t.l3Hod ? 1 : 0);          // Core i IDP, Core ii Kirkpatrick L3 (HOD Form)
+  const stretchCount = t => (t.stretch1 ? 1 : 0) + (t.stretch2 ? 1 : 0);
+  const growthCount = t => coreCount(t) + stretchCount(t);
+  const talentRating = t => { const c = coreCount(t), s = stretchCount(t); return c === 2 ? (s === 2 ? 5 : s === 1 ? 4 : 3) : c === 1 ? 2 : 1; };
+  const supervisorRating = list => {
+    const n = list.length, all = k => list.every(t => growthCount(t) >= k);
+    if (all(4)) return 5; if (all(3)) return 4; if (all(2)) return 3;
+    return list.filter(t => growthCount(t) >= 2).length / n >= .7 ? 2 : 1;
+  };
+  const ratingChip = r => `<span class="rating pill ${ratingCls(r)}">${r}</span>`;
   const stageOf = t => isTpg(t) ? ['Capai TPG', 'p-ok'] : isReady(t) ? ['Menunggu L3', 'p-info'] : ['Belum sedia', 'p-bad'];
   const titleCase = s => String(s || '').toLowerCase().replace(/(^|[\s(\/&-])(\p{L})/gu, (m, a, b) => a + b.toUpperCase()).replace(/\bDan\b/g, 'dan').replace(/\bBin\b/g, 'bin').replace(/\bBinti\b/g, 'binti').replace(/\bBte\b/g, 'bte').replace(/\bPuk\/Kpe\b/g, 'PUK/KPE');
 
@@ -356,7 +503,7 @@
   let editingId = null;
 
   /* ---------- Navigasi ---------- */
-  const VIEWS = ['ringkasan', 'talent'];
+  const VIEWS = ['ringkasan', 'kpi', 'talent'];
   function showView(v) {
     if (!VIEWS.includes(v)) v = 'ringkasan';
     VIEWS.forEach(x => { $('view-' + x).hidden = x !== v; });
@@ -503,7 +650,7 @@
         <td class="c">${t.series || '-'}</td>
         <td class="c">${tick(verified(t))}</td><td class="c">${tick(t.stretch1)}</td><td class="c">${tick(t.stretch2)}</td>
         <td class="c">${tick(t.idpAttendance)}</td><td class="c">${tick(t.l3Sv)}</td><td class="c">${tick(t.l3Presentation)}</td><td class="c">${tick(t.l3Hod)}</td>
-        <td><span class="pill ${sc}">${sl}</span></td>
+        <td class="c">${ratingChip(talentRating(t))}</td><td><span class="pill ${sc}">${sl}</span></td>
       </tr>`;
     }).join('');
     const empty = $('emptyList');
@@ -523,7 +670,91 @@
   $('rows').addEventListener('click', e => { const tr = e.target.closest('tr[data-id]'); if (tr) openForm(tr.dataset.id); });
   $('rows').addEventListener('keydown', e => { if (e.key === 'Enter') { const tr = e.target.closest('tr[data-id]'); if (tr) openForm(tr.dataset.id); } });
 
-  function renderAll() { renderSummary(); renderFilters(); renderList(); }
+  /* ---------- Status KPI ---------- */
+  const TALENT_SCALE = { 5: 'Kedua-dua Core + kedua-dua Stretch', 4: '2 Core + 1 Stretch (sasaran)', 3: '2 Core sahaja', 2: 'Hanya 1 Core', 1: 'Tiada penunjuk Core' };
+  const openSup = new Set();
+
+  function renderKpi() {
+    const n = talents.length;
+    // Jabatan / korporat
+    const tpg = talents.filter(isTpg).length, tpgV = pct(tpg, n), dr = rating(tpgV);
+    const need = th => Math.max(0, Math.ceil(th * n - 1e-9) - tpg);
+    $('kcDeptVal').innerHTML = n ? `${fmtPct(tpgV)} <small>· rating ${dr}</small>` : '-';
+    $('kcDeptNote').textContent = n ? (dr >= 4 ? 'Sasaran rating 4 dicapai' : `Perlu ${need(.65)} talent lagi untuk rating 4 (≥65%)`) : '';
+    setCard('kcDept', n ? (dr >= 4 ? 'ok' : dr === 3 ? 'warn' : 'bad') : null);
+
+    // Penyelia
+    const bySup = new Map();
+    talents.forEach(t => { const k = (t.supervisor || 'Tiada penyelia direkodkan').trim(); if (!bySup.has(k)) bySup.set(k, []); bySup.get(k).push(t); });
+    const sups = [...bySup.entries()].map(([name, list]) => ({ name, list, r: supervisorRating(list),
+      g2: list.filter(t => growthCount(t) >= 2).length, g3: list.filter(t => growthCount(t) >= 3).length, g4: list.filter(t => growthCount(t) >= 4).length }));
+    const sOk = sups.filter(x => x.r >= 4).length;
+    $('kcSupVal').innerHTML = sups.length ? `${sOk} <small>/ ${sups.length}</small>` : '-';
+    $('kcSupNote').textContent = sups.length ? `${sups.filter(x => x.r <= 2).length} penyelia pada rating 1–2` : '';
+    setCard('kcSup', sups.length ? (sOk / sups.length >= .8 ? 'ok' : sOk / sups.length >= .5 ? 'warn' : 'bad') : null);
+
+    // Talent
+    const dist = [5, 4, 3, 2, 1].map(r => ({ r, c: talents.filter(t => talentRating(t) === r).length }));
+    const tOk = dist[0].c + dist[1].c;
+    $('kcTalVal').innerHTML = n ? `${tOk} <small>/ ${n}</small>` : '-';
+    $('kcTalNote').textContent = n ? `${fmtPct(pct(tOk, n))} talent pada rating 4 atau 5` : '';
+    setCard('kcTal', n ? (pct(tOk, n) >= .8 ? 'ok' : pct(tOk, n) >= .5 ? 'warn' : 'bad') : null);
+    const maxC = Math.max(1, ...dist.map(d => d.c));
+    $('talentRatingBars').innerHTML = dist.map(d => `
+      <div class="bar-row">
+        <span>${ratingChip(d.r)}</span>
+        <span class="desc">${TALENT_SCALE[d.r]}</span>
+        <div class="bar-track"><div class="bar-fill" style="width:${d.c / maxC * 100}%;background:var(${d.r >= 4 ? '--ok' : d.r === 3 ? '--warn' : '--bad'})"></div></div>
+        <span class="n">${d.c} <small>${fmtPct(pct(d.c, n))}</small></span>
+      </div>`).join('');
+    const below = talents.filter(t => talentRating(t) < 4);
+    const missL3 = below.filter(t => t.idpAttendance && !t.l3Hod && stretchCount(t) >= 1).length;
+    const missStretch = below.filter(t => coreCount(t) === 2 && !stretchCount(t)).length;
+    const missMore = below.length - missL3 - missStretch;
+    const bl = $('talentBlocker');
+    if (n && below.length) {
+      bl.hidden = false;
+      bl.innerHTML = `<b>${below.length} talent belum capai sasaran.</b> ${missL3} daripadanya hanya kurang <b>Core ii (Kirkpatrick L3)</b>: HOD Form belum disahkan` +
+        (missStretch ? `; ${missStretch} talent sudah lengkap Core tetapi tiada Stretch` : '') + (missMore ? `; ${missMore} talent lagi kurang lebih daripada satu penunjuk.` : '.') + ' Lihat tab Talent dengan tapisan "L3: belum HOD Form".';
+    } else bl.hidden = true;
+
+    renderSupervisors(sups);
+
+    // Jabatan
+    const m = new Map();
+    talents.forEach(t => { const u = unitOf(t); const o = m.get(u) || { total: 0, tpg: 0 }; o.total++; if (isTpg(t)) o.tpg++; m.set(u, o); });
+    const rows = [...m.entries()].sort((a, b) => b[1].total - a[1].total || a[0].localeCompare(b[0]));
+    const gap = (o, th) => { const g = Math.ceil(th * o.total - 1e-9) - o.tpg; return g <= 0 ? '<span class="tick y">✓</span>' : g; };
+    $('deptRows').innerHTML = rows.map(([u, o]) => {
+      const v = pct(o.tpg, o.total), r = rating(v);
+      return `<tr><td class="unit-name">${esc(titleCase(u))}</td><td class="num">${o.total}</td><td class="num">${o.tpg}</td><td class="num">${fmtPct(v)}</td><td class="c">${ratingChip(r)}</td><td class="num">${gap(o, .65)}</td><td class="num">${gap(o, .8)}</td></tr>`;
+    }).join('') + (n ? `<tr class="total"><td>Korporat</td><td class="num">${n}</td><td class="num">${tpg}</td><td class="num">${fmtPct(tpgV)}</td><td class="c">${ratingChip(dr)}</td><td class="num">${need(.65) || '<span class="tick y">✓</span>'}</td><td class="num">${need(.8) || '<span class="tick y">✓</span>'}</td></tr>` : '');
+  }
+
+  let lastSups = [];
+  function renderSupervisors(sups) {
+    if (sups) lastSups = sups;
+    const q = $('supQ').value.trim().toLowerCase(), fr = $('supRating').value;
+    const list = lastSups.filter(x => (!fr || String(x.r) === fr) &&
+      (!q || x.name.toLowerCase().includes(q) || x.list.some(t => String(t.name).toLowerCase().includes(q) || String(t.staffNo).toLowerCase().includes(q))))
+      .sort((a, b) => a.r - b.r || b.list.length - a.list.length || a.name.localeCompare(b.name));
+    $('supCount').textContent = lastSups.length ? `${list.length} daripada ${lastSups.length} penyelia` : '';
+    const chips = t => `<span class="chips"><span class="chip ${t.idpAttendance ? 'on' : ''}" title="Core i: IDP">C1</span><span class="chip ${t.l3Hod ? 'on' : ''}" title="Core ii: Kirkpatrick L3">C2</span><span class="chip ${t.stretch1 ? 'on' : ''}" title="Stretch i">S1</span><span class="chip ${t.stretch2 ? 'on' : ''}" title="Stretch ii">S2</span></span>`;
+    $('supRows').innerHTML = list.map(x => {
+      const open = openSup.has(x.name);
+      const row = `<tr class="sup${open ? ' open' : ''}" data-sup="${esc(x.name)}" tabindex="0" aria-expanded="${open}"><td><span class="who">${esc(titleCase(x.name))}</span></td><td class="num">${x.list.length}</td><td class="num">${x.g2}</td><td class="num">${x.g3}</td><td class="num">${x.g4}</td><td class="c">${ratingChip(x.r)}</td></tr>`;
+      if (!open) return row;
+      const det = x.list.slice().sort((a, b) => growthCount(a) - growthCount(b)).map(t =>
+        `<div><span class="rname">${esc(titleCase(t.name))} <span class="sub">${esc(t.staffNo)}</span></span>${chips(t)}<span class="note">${growthCount(t)}/4</span>${ratingChip(talentRating(t))}</div>`).join('');
+      return row + `<tr class="detail"><td colspan="6"><div class="reports">${det}</div></td></tr>`;
+    }).join('') || '<tr><td colspan="6" class="note">Tiada penyelia sepadan.</td></tr>';
+  }
+  ['supQ', 'supRating'].forEach(id => $(id).addEventListener('input', () => renderSupervisors()));
+  function toggleSup(tr) { const k = tr.dataset.sup; if (openSup.has(k)) openSup.delete(k); else openSup.add(k); renderSupervisors(); }
+  $('supRows').addEventListener('click', e => { const tr = e.target.closest('tr.sup'); if (tr) toggleSup(tr); });
+  $('supRows').addEventListener('keydown', e => { if (e.key === 'Enter') { const tr = e.target.closest('tr.sup'); if (tr) toggleSup(tr); } });
+
+  function renderAll() { renderSummary(); renderKpi(); renderFilters(); renderList(); }
 
   /* ---------- Borang ---------- */
   const TXT = { staffNo: 'fStaffNo', gred: 'fGred', name: 'fName', title: 'fTitle', jabatan: 'fJabatan', bahagian: 'fBahagian', email: 'fEmail', gender: 'fGender', supervisor: 'fSupervisor', ketuaBahagian: 'fKB', ketuaJabatan: 'fKJ', formQ2: 'fQ2', formQ3: 'fQ3', formQ4: 'fQ4', initiative: 'fInit', presentationDate: 'fPresDate' };
@@ -540,7 +771,7 @@
     d.series = $('fSeriesIn').value ? Number($('fSeriesIn').value) : null;
     return d;
   }
-  function updateStagePill() { const [l, c] = stageOf(readForm()); $('dlgStage').innerHTML = `<span class="pill ${c}">${l}</span>`; }
+  function updateStagePill() { const f = readForm(), [l, c] = stageOf(f), r = talentRating(f); $('dlgStage').innerHTML = `<span class="pill ${c}">${l}</span> <span class="pill ${ratingCls(r)}">KPI talent: rating ${r}</span> <span class="note">${growthCount(f)}/4 penunjuk</span>`; }
   $('form').addEventListener('input', updateStagePill);
 
   async function openForm(id) {
@@ -605,7 +836,7 @@
       ['STRETCH 1', 'stretch1'], ['STRETCH 2', 'stretch2'], ['CORE 1 IDP', 'idpAttendance'], ['SIRI', 'series'], ['L3 SV FORM', 'l3Sv'], ['L3 PEMBENTANGAN', 'l3Presentation'], ['L3 HOD FORM', 'l3Hod'], ['TARIKH PEMBENTANGAN', 'presentationDate']];
     const cell = v => { const s = v === true ? 'Yes' : v === false ? 'No' : String(v ?? ''); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
     const list = filtered();
-    const csv = '﻿' + [cols.map(c => c[0]).concat('TAHAP').join(',')].concat(list.map(t => cols.map(c => cell(t[c[1]])).concat(cell(stageOf(t)[0])).join(','))).join('\r\n');
+    const csv = '﻿' + [cols.map(c => c[0]).concat('TAHAP', 'RATING KPI TALENT').join(',')].concat(list.map(t => cols.map(c => cell(t[c[1]])).concat(cell(stageOf(t)[0]), cell(talentRating(t))).join(','))).join('\r\n');
     const filename = `ETP-2026-talent-${new Date().toISOString().slice(0, 10)}.csv`, blob = new Blob([csv], { type: 'text/csv' });
     if (!downloads) {
       // Di luar claude.ai (cth. GitHub Pages): muat turun biasa melalui pautan

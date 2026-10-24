@@ -857,7 +857,7 @@
       </div>
       <div id="hEmpty" class="empty" hidden></div>
       <div class="note cdiff-note" id="hDiffNote" hidden><span class="cdiff">≠</span> <b id="hDiffN">0</b> talent whose slide category differs from the colour count (5 or more of the 10 competencies in one colour, checked Red, then Yellow, then Green). The category from the HCC slides is kept. Hover or tap the ≠ for the counts, or use the category filter.</div>
-      <div class="note">Groups: F Forward-Looking · A Agile · I Innovation · T Teamwork · H High Performance · IHSAN Ihsan Leadership. Overview colours: green ≥ 75, yellow 60–74, red &lt; 60. The overview score also sets <b>potential</b> on the 9-Box tab.</div>
+      <div class="note">Groups: F Forward-Looking · A Agile · I Inspirational · T Trustworthy · H High Performance · IHSAN Ihsan Leadership. Overview colours: green ≥ 75, yellow 60–74, red &lt; 60. The overview score also sets <b>potential</b> on the 9-Box tab.</div>
     </div>
 
     <div class="panel">
@@ -2285,7 +2285,7 @@
     y = doc.lastAutoTable.finalY + 9;
 
     title('Competency groups (FAITH and IHSAN)', y); y += 2;
-    const GL = { F: 'F: Forward-Looking', A: 'A: Agile', I: 'I: Innovation', T: 'T: Teamwork', H: 'H: High Performance', IHSAN: 'IHSAN: Ihsan Leadership' };
+    const GL = { F: 'F: Forward-Looking', A: 'A: Agile', I: 'I: Inspirational', T: 'T: Trustworthy', H: 'H: High Performance', IHSAN: 'IHSAN: Ihsan Leadership' };
     const grpRows = Object.keys(GL).map(g => { const cs = COMPS.filter(c => c.g === g), v = cs.reduce((s2, c) => s2 + avg(all, c.k), 0) / cs.length; return [GL[g], P(cs.map(c => c.name).join(', ')), v.toFixed(1)]; });
     doc.autoTable({ startY: y, margin: { left: M, right: M }, headStyles: head, styles: body, theme: 'grid',
       head: [['Group', 'Competencies', 'Average']], body: grpRows, columnStyles: { 0: { cellWidth: 46 }, 2: { halign: 'right', cellWidth: 20 } },

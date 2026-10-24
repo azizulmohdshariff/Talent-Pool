@@ -364,6 +364,30 @@
   .icon-list { display: grid; gap: 12px; }
   .icon-list div { display: flex; gap: 12px; align-items: center; line-height: 1.45; }
   .icon-list .ico { color: var(--accent); width: 40px; height: 40px; padding: 8px; border-radius: 10px; background: var(--brand-tint); }
+  /* 9-Box */
+  .nb-wrap { display: grid; grid-template-columns: 22px 64px minmax(0, 1fr); grid-template-rows: auto auto auto; gap: 6px 8px; align-items: stretch; }
+  .nb-y { grid-row: 1; grid-column: 1; display: flex; align-items: center; justify-content: center; }
+  .nb-y span { writing-mode: vertical-rl; transform: rotate(180deg); font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .nb-ylab { grid-row: 1; grid-column: 2; display: grid; grid-template-rows: repeat(3, 1fr); gap: 6px; font-size: 11px; color: var(--muted); text-align: right; }
+  .nb-ylab span { display: flex; align-items: center; justify-content: flex-end; }
+  .nb-grid { grid-row: 1; grid-column: 3; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .nb-xlab { grid-row: 2; grid-column: 3; display: grid; grid-template-columns: repeat(3, 1fr); font-size: 11px; color: var(--muted); text-align: center; }
+  .nb-x { grid-row: 3; grid-column: 3; text-align: center; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .nb-box { min-height: 104px; min-width: 0; border-radius: 10px; border: 1px solid var(--line); padding: 10px; display: grid; align-content: start; gap: 2px; text-align: left; cursor: pointer; font: inherit; color: var(--fg); background: var(--surface); }
+  .nb-box:hover { filter: brightness(0.97); }
+  .nb-box[aria-pressed="true"] { outline: 3px solid var(--accent); outline-offset: 1px; }
+  .nb-n { font-family: var(--mono); font-size: 26px; font-weight: 500; line-height: 1.1; }
+  .nb-name { font-weight: 600; font-size: 13px; }
+  .nb-who { font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .nb-box.t-ok { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+  .nb-box.t-ok .nb-who { color: var(--accent-fg); opacity: .85; }
+  .nb-box.t-ok2 { background: var(--brand-tint); border-color: var(--accent2); }
+  .nb-box.t-mid { background: var(--sunken); }
+  .nb-box.t-warn { background: var(--warn-bg); }
+  .nb-box.t-bad2 { background: var(--warn-bg); }
+  .nb-box.t-bad { background: var(--bad-bg); }
+  #nbRows tr { cursor: pointer; } #nbRows tr:hover { background: var(--sunken); }
+  @media (max-width: 560px) { .nb-wrap { grid-template-columns: 16px 46px minmax(0, 1fr); } .nb-box { min-height: 86px; padding: 7px; } .nb-n { font-size: 20px; } .nb-name { font-size: 11px; } .nb-who { display: none; } }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
 
@@ -375,6 +399,7 @@
       <a href="#summary" data-view="summary">Summary</a>
       <a href="#kpi" data-view="kpi">KPI Status</a>
       <a href="#actions" data-view="actions">Pending Actions</a>
+      <a href="#ninebox" data-view="ninebox">9-Box</a>
       <a href="#talent" data-view="talent">Talent</a>
     </nav>
   </div>
@@ -745,6 +770,64 @@
     </div>
   </section>
 
+  <!-- 9-BOX -->
+  <section id="view-ninebox" class="stack" hidden>
+    <div class="panel">
+      <div class="section-head">
+        <div><h2>9-Box talent grid</h2><p>Places each talent by <b>performance</b> (horizontal) and <b>potential</b> (vertical). Use it to calibrate the talent pool and plan development and succession. Click a box to list the talent in it.</p></div>
+        <span class="note" id="nbCoverage"></span>
+      </div>
+      <div class="toolbar">
+        <select id="nbUnit" aria-label="Filter by department or division"><option value="">All departments / divisions</option></select>
+        <button class="btn" type="button" id="nbTemplate">Download rating template</button>
+        <label class="btn primary nbImportLbl" for="nbFile">Import ratings…</label>
+        <input type="file" id="nbFile" accept=".xlsx,.xls,.csv" hidden>
+      </div>
+      <div class="error" id="nbError" hidden></div>
+      <div class="nb-wrap">
+        <div class="nb-y"><span>Potential</span></div>
+        <div class="nb-grid" id="nbGrid"></div>
+        <div class="nb-ylab"><span>High</span><span>Moderate</span><span>Low</span></div>
+        <div></div>
+        <div class="nb-xlab"><span>Low</span><span>Moderate</span><span>High</span></div>
+        <div></div>
+        <div class="nb-x">Performance</div>
+      </div>
+    </div>
+
+    <div class="panel" id="nbListPanel">
+      <div class="section-head"><div><h2 id="nbListTitle">Talent in the grid</h2><p id="nbListHint"></p></div></div>
+      <div class="table-scroll act-scroll">
+        <table>
+          <thead><tr><th>Talent</th><th>Box</th><th class="c">Performance</th><th class="c">Potential</th><th class="c">ETP KPI</th></tr></thead>
+          <tbody id="nbRows"></tbody>
+        </table>
+      </div>
+      <div id="nbEmpty" class="empty" hidden></div>
+    </div>
+
+    <div class="panel">
+      <details class="ref">
+        <summary>How to add performance and potential ratings</summary>
+        <div class="refgrid">
+          <div>
+            <h3>Rating scale</h3>
+            <p><b>Performance</b>: latest annual performance rating. <b>Potential</b>: e.g. from the Harrison leadership assessment or calibration panel.</p>
+            <p>Each uses 3 levels: <b>Low</b>, <b>Moderate</b>, <b>High</b> (or 1, 2, 3). A 5-point performance scale is also accepted: 1–2 = Low, 3 = Moderate, 4–5 = High.</p>
+          </div>
+          <div>
+            <h3>Three ways to add ratings</h3>
+            <ol class="ov-num">
+              <li>Download the rating template, fill the PERFORMANCE and POTENTIAL columns, then use <b>Import ratings</b>.</li>
+              <li>Or add PERFORMANCE and POTENTIAL columns to the Master List.</li>
+              <li>Or open a talent profile, choose <b>Edit talent</b> and set the two ratings.</li>
+            </ol>
+          </div>
+        </div>
+      </details>
+    </div>
+  </section>
+
   <!-- TALENT PROFILE (opened from the Talent and Pending Actions lists) -->
   <section id="view-profile" class="stack" hidden>
     <div class="prof-bar">
@@ -882,6 +965,13 @@
         <div class="field"><label for="fPresDate">Presentation date</label><input type="date" id="fPresDate"></div>
       </div>
     </fieldset>
+    <fieldset>
+      <legend>9-Box assessment</legend>
+      <div class="fields">
+        <div class="field"><label for="fPerf">Performance</label><select id="fPerf"><option value="">Not rated</option><option value="1">Low</option><option value="2">Moderate</option><option value="3">High</option></select></div>
+        <div class="field"><label for="fPot">Potential</label><select id="fPot"><option value="">Not rated</option><option value="1">Low</option><option value="2">Moderate</option><option value="3">High</option></select></div>
+      </div>
+    </fieldset>
     <div class="note" id="fMeta"></div>
     <div class="error" id="fError" hidden></div>
     <div class="actions">
@@ -931,7 +1021,7 @@
   let editingId = null;
 
   /* ---------- Navigasi ---------- */
-  const VIEWS = ['overview', 'summary', 'kpi', 'actions', 'talent', 'profile'].filter(v => $('view-' + v));
+  const VIEWS = ['overview', 'summary', 'kpi', 'actions', 'ninebox', 'talent', 'profile'].filter(v => $('view-' + v));
   let lastListView = 'talent', profileId = null, pendingProfile = null;
   function showView(v) {
     if (v === 'ringkasan') v = 'summary';
@@ -1325,6 +1415,7 @@
   function profileList() {
     // Prev/next follows the list the profile was opened from
     if (lastListView === 'actions') { const seen = new Set(); return sortedActions(filteredActions(allActions())).map(a => a.t.id).filter(id => !seen.has(id) && seen.add(id)); }
+    if (lastListView === 'ninebox') return [...document.querySelectorAll('#nbRows tr[data-id]')].map(tr => tr.dataset.id);
     return filtered().map(t => t.id);
   }
   function openProfile(id, from) {
@@ -1366,7 +1457,8 @@
     $('profTitle').textContent = [t.staffNo, titleCase(t.title), t.gred].filter(Boolean).join(' · ');
     const [sl, sc] = stageOf(t);
     $('profChips').innerHTML = `<span class="pill ${sc}">${sl}</span><span class="pill ${verified(t) ? 'p-ok' : 'p-bad'}">Q2 ${esc(t.formQ2 || 'Pending')}</span>` +
-      (t.series ? `<span class="pill p-info">AIL Series ${t.series}</span>` : '<span class="pill p-bad">AIL not attended</span>');
+      (t.series ? `<span class="pill p-info">AIL Series ${t.series}</span>` : '<span class="pill p-bad">AIL not attended</span>') +
+      (boxOf(t) ? `<span class="pill p-ok">9-Box: ${BOXES[boxOf(t)][0]}</span>` : '<span class="pill p-info">9-Box: not rated</span>');
     const r = talentRating(t);
     $('profRating').innerHTML = `${r}<small> / 5</small>`;
     $('profRating').style.color = `var(${r >= 4 ? '--ok' : r === 3 ? '--warn' : '--bad'})`;
@@ -1432,7 +1524,110 @@
     catch (_) { const r = document.createRange(); r.selectNodeContents(b.previousElementSibling); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); toast('Email selected. Copy it with your keyboard or menu.'); }
   });
 
-  function renderAll() { renderOverview(); renderSummary(); renderKpi(); renderActions(); renderFilters(); renderList(); renderProfile(); tryPendingProfile(); }
+  /* ---------- 9-Box ---------- */
+  const LEVEL = { 1: 'Low', 2: 'Moderate', 3: 'High' };
+  // Text or number to a 3-level rating; a 5-point scale maps 1-2 Low, 3 Moderate, 4-5 High
+  function toLevel(v, five) {
+    const s = String(v ?? '').trim().toLowerCase();
+    if (!s) return null;
+    if (/^(high|tinggi|h|exceeds|outstanding|cemerlang)/.test(s)) return 3;
+    if (/^(moderate|medium|mid|sederhana|m|average|meets|baik)/.test(s)) return 2;
+    if (/^(low|rendah|l|below|lemah)/.test(s)) return 1;
+    const n = Number(s);
+    if (!isFinite(n) || n <= 0) return null;
+    if (five || n > 3) return n <= 2 ? 1 : n < 4 ? 2 : 3;
+    return Math.min(3, Math.max(1, Math.round(n)));
+  }
+  const BOXES = {
+    '3-1': ['Enigma', 'High potential, low performance. Find the blocker: role fit, coaching, clear goals.', 'warn'],
+    '3-2': ['Growth talent', 'High potential, moderate performance. Stretch assignments and mentoring.', 'ok2'],
+    '3-3': ['Future leader', 'Top talent. Accelerate: critical roles and succession slates.', 'ok'],
+    '2-1': ['Inconsistent player', 'Moderate potential, low performance. Performance plan and support.', 'bad2'],
+    '2-2': ['Core player', 'Solid contributor. Build depth in the current role.', 'mid'],
+    '2-3': ['High performer', 'Strong results. Broaden experience to grow potential.', 'ok2'],
+    '1-1': ['Risk', 'Low performance and potential. Address performance or role fit.', 'bad'],
+    '1-2': ['Effective contributor', 'Reliable in the current role. Keep engaged.', 'mid'],
+    '1-3': ['Trusted professional', 'High performance, lower potential. Recognise and retain expertise.', 'mid']
+  };
+  let nbBox = '';
+  const boxOf = t => t.performance && t.potential ? `${t.potential}-${t.performance}` : '';
+
+  function renderNineBox() {
+    if (!$('nbGrid')) return;
+    const cu = $('nbUnit').value, units = [...new Set(talents.map(unitOf))].sort();
+    $('nbUnit').innerHTML = '<option value="">All departments / divisions</option>' + units.map(x => `<option value="${esc(x)}">${esc(titleCase(x))}</option>`).join('');
+    $('nbUnit').value = cu;
+    const pool = talents.filter(t => !cu || unitOf(t) === cu);
+    const rated = pool.filter(boxOf);
+    $('nbCoverage').textContent = pool.length ? `${rated.length} of ${pool.length} talent rated` : '';
+    let html = '';
+    for (const pot of [3, 2, 1]) for (const perf of [1, 2, 3]) {
+      const k = `${pot}-${perf}`, [name, hint, tone] = BOXES[k], list = rated.filter(t => boxOf(t) === k);
+      const names = list.slice(0, 3).map(t => esc(titleCase(t.name).split(' ').slice(0, 2).join(' '))).join(', ') + (list.length > 3 ? ` +${list.length - 3}` : '');
+      html += `<button type="button" class="nb-box t-${tone}" data-box="${k}" aria-pressed="${nbBox === k}" title="${esc(hint)}">
+        <span class="nb-n">${list.length}</span><span class="nb-name">${name}</span><span class="nb-who">${names || '&nbsp;'}</span></button>`;
+    }
+    $('nbGrid').innerHTML = html;
+
+    const list = (nbBox ? rated.filter(t => boxOf(t) === nbBox) : rated)
+      .sort((a, b) => (b.potential + b.performance) - (a.potential + a.performance) || String(a.name).localeCompare(String(b.name)));
+    $('nbListTitle').textContent = nbBox ? `${BOXES[nbBox][0]} (${list.length})` : `Rated talent (${list.length})`;
+    $('nbListHint').textContent = nbBox ? BOXES[nbBox][1] + ' Click the box again to show everyone.' : 'Click a row to open the talent profile.';
+    $('nbRows').innerHTML = list.map(t => `<tr data-id="${esc(t.id)}" tabindex="0"><td><div class="who">${esc(titleCase(t.name))}</div><div class="sub">${esc(t.staffNo)} · ${esc(titleCase(unitOf(t)))}</div></td>
+      <td>${BOXES[boxOf(t)][0]}</td><td class="c">${LEVEL[t.performance]}</td><td class="c">${LEVEL[t.potential]}</td><td class="c">${ratingChip(talentRating(t))}</td></tr>`).join('');
+    const empty = $('nbEmpty');
+    if (!pool.length) { empty.hidden = false; empty.innerHTML = '<strong>No data yet</strong><span>Load the talent data first.</span>'; }
+    else if (!rated.length) { empty.hidden = false; empty.innerHTML = `<strong>No performance and potential ratings yet</strong><span>The ETP Master List has no performance or potential columns. Download the rating template, fill it in and import it, or rate talent one by one from their profile.</span>${canWrite ? '' : '<span>You have view-only access.</span>'}`; }
+    else if (!list.length) { empty.hidden = false; empty.innerHTML = '<strong>No talent in this box</strong>'; }
+    else empty.hidden = true;
+    $('nbTemplate').hidden = !pool.length;
+    $('nbFile').disabled = !canWrite; document.querySelector('.nbImportLbl').hidden = !canWrite || !talents.length;
+  }
+  $('nbGrid').addEventListener('click', e => { const b = e.target.closest('.nb-box'); if (!b) return; nbBox = nbBox === b.dataset.box ? '' : b.dataset.box; renderNineBox(); });
+  $('nbUnit').addEventListener('input', renderNineBox);
+  $('nbRows').addEventListener('click', e => { const tr = e.target.closest('tr[data-id]'); if (tr) openProfile(tr.dataset.id, 'ninebox'); });
+  $('nbRows').addEventListener('keydown', e => { if (e.key === 'Enter') { const tr = e.target.closest('tr[data-id]'); if (tr) openProfile(tr.dataset.id, 'ninebox'); } });
+
+  $('nbTemplate').onclick = () => {
+    const cell = v => { const s = String(v ?? ''); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+    const rows = talents.slice().sort((a, b) => unitOf(a).localeCompare(unitOf(b)) || String(a.name).localeCompare(String(b.name)))
+      .map(t => [t.staffNo, titleCase(t.name), titleCase(unitOf(t)), t.gred, t.performance ? LEVEL[t.performance] : '', t.potential ? LEVEL[t.potential] : '']);
+    saveCsv('ETP-2026-9box-rating-template.csv', '﻿' + [['STAFF NO', 'STAFF NAME', 'DEPARTMENT / DIVISION', 'GRADE', 'PERFORMANCE', 'POTENTIAL'], ...rows].map(r => r.map(cell).join(',')).join('\r\n'));
+  };
+
+  $('nbFile').addEventListener('change', async e => {
+    const f = e.target.files && e.target.files[0]; e.target.value = '';
+    if (!f || !store) return;
+    const err = $('nbError'); err.hidden = true;
+    try {
+      await loadXlsx();
+      const wb = XLSX.read(await f.arrayBuffer(), { type: 'array' });
+      let rows = null, hi = -1, hdr = null;
+      for (const n of wb.SheetNames) {
+        const r = sheetRows(wb.Sheets[n]), h = findHeader(r);
+        if (h >= 0) { const H = r[h].map(normH); if (H.some(x => COLS.performance.includes(x) || COLS.potential.includes(x))) { rows = r; hi = h; hdr = H; break; } }
+      }
+      if (!rows) throw new Error('No sheet has STAFF NO with PERFORMANCE or POTENTIAL columns.');
+      const si = hdr.findIndex(x => COLS.staffNo.includes(x)), pi = hdr.findIndex(x => COLS.performance.includes(x)), qi = hdr.findIndex(x => COLS.potential.includes(x));
+      const body = rows.slice(hi + 1);
+      const five = { p: pi >= 0 && body.some(r => Number(r[pi]) > 3), q: qi >= 0 && body.some(r => Number(r[qi]) > 3) };
+      let updated = 0, missing = 0, blank = 0;
+      for (const r of body) {
+        const id = normH(r[si]); if (!id) continue;
+        const t = talents.find(x => x.id === id); if (!t) { missing++; continue; }
+        const d = {};
+        if (pi >= 0) { const v = toLevel(r[pi], five.p); if (v) d.performance = v; }
+        if (qi >= 0) { const v = toLevel(r[qi], five.q); if (v) d.potential = v; }
+        if (!Object.keys(d).length) { blank++; continue; }
+        if (d.performance === t.performance && d.potential === t.potential) { updated++; continue; }
+        d.updatedAt = Date.now(); d.updatedBy = myId;
+        await store.update(id, d); updated++;
+      }
+      toast(`${updated} talent rated` + (missing ? ` · ${missing} staff no. not found` : '') + (blank ? ` · ${blank} rows without ratings` : ''));
+    } catch (x) { err.hidden = false; err.textContent = 'Import failed: ' + (x && x.message || x); }
+  });
+
+  function renderAll() { renderOverview(); renderSummary(); renderKpi(); renderActions(); renderNineBox(); renderFilters(); renderList(); renderProfile(); tryPendingProfile(); }
 
   /* ---------- Borang ---------- */
   const TXT = { staffNo: 'fStaffNo', gred: 'fGred', name: 'fName', title: 'fTitle', jabatan: 'fJabatan', bahagian: 'fBahagian', email: 'fEmail', gender: 'fGender', supervisor: 'fSupervisor', ketuaBahagian: 'fKB', ketuaJabatan: 'fKJ', formQ2: 'fQ2', formQ3: 'fQ3', formQ4: 'fQ4', initiative: 'fInit', presentationDate: 'fPresDate' };
@@ -1447,6 +1642,8 @@
     d.bahagian = d.bahagian ? d.bahagian.toUpperCase() : null;
     for (const [k, id] of Object.entries(CHK)) d[k] = $(id).checked;
     d.series = $('fSeriesIn').value ? Number($('fSeriesIn').value) : null;
+    d.performance = $('fPerf').value ? Number($('fPerf').value) : null;
+    d.potential = $('fPot').value ? Number($('fPot').value) : null;
     return d;
   }
   function updateStagePill() { const f = readForm(), [l, c] = stageOf(f), r = talentRating(f); $('dlgStage').innerHTML = `<span class="pill ${c}">${l}</span> <span class="pill ${ratingCls(r)}">Talent KPI: rating ${r}</span> <span class="note">${growthCount(f)}/4 indicators</span>`; }
@@ -1459,6 +1656,8 @@
     for (const [k, el] of Object.entries(TXT)) { $(el).value = t ? (t[k] ?? '') : (DEFAULTS[k] || ''); $(el).disabled = !canWrite; }
     for (const [k, el] of Object.entries(CHK)) { $(el).checked = t ? !!t[k] : false; $(el).disabled = !canWrite; }
     $('fSeriesIn').value = t && t.series ? String(t.series) : ''; $('fSeriesIn').disabled = !canWrite;
+    $('fPerf').value = t && t.performance ? String(t.performance) : ''; $('fPerf').disabled = !canWrite;
+    $('fPot').value = t && t.potential ? String(t.potential) : ''; $('fPot').disabled = !canWrite;
     $('fStaffNo').readOnly = !!t;
     $('saveBtn').hidden = !canWrite;
     $('fError').hidden = true;
@@ -1511,7 +1710,7 @@
   $('csvBtn').onclick = async () => {
     const cols = [['STAFF NO', 'staffNo'], ['STAFF NAME', 'name'], ['EMAIL', 'email'], ['TITLE', 'title'], ['DEPARTMENT', 'jabatan'], ['DIVISION', 'bahagian'], ['GRADE', 'gred'], ['GENDER', 'gender'],
       ['IMMEDIATE SUPERVISOR', 'supervisor'], ['HEAD OF DIVISION', 'ketuaBahagian'], ['HEAD OF DEPARTMENT', 'ketuaJabatan'], ['FORMS Q2', 'formQ2'], ['FORMS Q3', 'formQ3'], ['FORMS Q4', 'formQ4'], ['STATUS INITIATIVE', 'initiative'],
-      ['STRETCH 1', 'stretch1'], ['STRETCH 2', 'stretch2'], ['CORE 1 TDP', 'idpAttendance'], ['SERIES', 'series'], ['L3 SV FORM', 'l3Sv'], ['L3 PRESENTATION', 'l3Presentation'], ['L3 HOD FORM', 'l3Hod'], ['PRESENTATION DATE', 'presentationDate']];
+      ['STRETCH 1', 'stretch1'], ['STRETCH 2', 'stretch2'], ['CORE 1 TDP', 'idpAttendance'], ['SERIES', 'series'], ['L3 SV FORM', 'l3Sv'], ['L3 PRESENTATION', 'l3Presentation'], ['L3 HOD FORM', 'l3Hod'], ['PRESENTATION DATE', 'presentationDate'], ['PERFORMANCE', 'performance'], ['POTENTIAL', 'potential']];
     const cell = v => { const s = v === true ? 'Yes' : v === false ? 'No' : String(v ?? ''); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
     const list = filtered();
     const csv = '﻿' + [cols.map(c => c[0]).concat('STAGE', 'TALENT KPI RATING').join(',')].concat(list.map(t => cols.map(c => cell(t[c[1]])).concat(cell(stageOf(t)[0]), cell(talentRating(t))).join(','))).join('\r\n');
@@ -1793,7 +1992,8 @@
     stretch1: ['STRETCH 1 (PROCESS IMPROVEMENT)', 'STRETCH 1'], stretch2: ['STRETCH 2 (STRECTH ROLE)', 'STRETCH 2 (STRETCH ROLE)', 'STRETCH 2'],
     idpAttendance: ['CORE 1 (IDP) ATTENDANCE', 'CORE 1 IDP', 'CORE 1 TDP'], series: ['CORE 1 (IDP) SERIES', 'SIRI', 'SERIES'],
     l3Sv: ['CORE 2 (LEVEL 3) SV FORM', 'L3 SV FORM'], l3Presentation: ['CORE 2 (LEVEL 3) PRESENTATION', 'L3 PEMBENTANGAN', 'L3 PRESENTATION'], l3Hod: ['CORE 2 (LEVEL 3) HOD FORM', 'L3 HOD FORM'],
-    presentationDate: ['REMARK (DATE PRESENTATION)', 'TARIKH PEMBENTANGAN', 'PRESENTATION DATE']
+    presentationDate: ['REMARK (DATE PRESENTATION)', 'TARIKH PEMBENTANGAN', 'PRESENTATION DATE'],
+    performance: ['PERFORMANCE', 'PRESTASI', 'PERFORMANCE RATING'], potential: ['POTENTIAL', 'POTENSI', 'POTENTIAL RATING']
   };
   const BOOL = ['stretch1', 'stretch2', 'idpAttendance', 'l3Sv', 'l3Presentation', 'l3Hod'];
   const UPPER = ['jabatan', 'bahagian'];
@@ -1841,6 +2041,8 @@
       r.slice(h + 1).forEach(row => { const id = normH(row[si]); if (id && row[gi]) gender[id] = normH(row[gi]); });
     });
 
+    const fiveScale = {};
+    ['performance', 'potential'].forEach(k => { fiveScale[k] = idx[k] != null && rows.slice(hi + 1).some(r => Number(r[idx[k]]) > 3); });
     const out = {};
     rows.slice(hi + 1).forEach(row => {
       const id = normH(row[idx.staffNo]);
@@ -1852,6 +2054,7 @@
         if (BOOL.includes(k)) d[k] = isYes(v);
         else if (k === 'series') { const n = parseInt(norm(v), 10); d[k] = n >= 1 && n <= 5 ? n : null; }
         else if (k === 'presentationDate') d[k] = isoDate(v);
+        else if (k === 'performance' || k === 'potential') d[k] = toLevel(v, fiveScale[k]);
         else { const s = norm(v); d[k] = s ? (UPPER.includes(k) ? s.toUpperCase() : s) : null; }
       }
       if (!d.gender && gender[id]) d.gender = gender[id];

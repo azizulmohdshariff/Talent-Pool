@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monitor Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f172a; --card: #1e293b; --text: #e2e8f0; --muted: #94a3b8;
+      --ok: #22c55e; --warn: #f59e0b; --bad: #ef4444; --accent: #3b82f6;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); padding: 20px; }
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 8px; }
+    header small { color: var(--muted); }
+
+    /* Grid kad KPI */
+    .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 20px; }
+    .card { background: var(--card); border-radius: 12px; padding: 16px; }
+    .card .label { color: var(--muted); font-size: 13px; }
+    .card .value { font-size: 28px; font-weight: 700; margin-top: 6px; }
+
+    /* Bahagian carta + jadual */
+    .grid { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
+    @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } }
+
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { text-align: left; padding: 8px 4px; border-bottom: 1px solid #334155; }
+    th { color: var(--muted); font-weight: 500; }
+    .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
+    .up { background: var(--ok); } .slow { background: var(--warn); } .down { background: var(--bad); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>📊 Monitor Dashboard</h1>
+    <small>Kemas kini terakhir: <span id="lastUpdate">-</span></small>
+  </header>
+
+  <section class="kpis">
+    <div class="card"><div class="label">CPU</div><div class="value" id="cpu">-</div></div>
+    <div class="card"><div class="label">Memori</div><div class="value" id="mem">-</div></div>
+    <div class="card"><div class="label">Request / min</div><div class="value" id="rpm">-</div></div>
+    <div class="card"><div class="label">Ralat</div><div class="value" id="err">-</div></div>
+  </section>
+
+  <section class="grid">
+    <div class="card">
+      <div class="label">CPU &amp; Memori (%) – 20 bacaan terakhir</div>
+      <canvas id="chart" height="120"></canvas>
+    </div>
+    <div class="card">
+      <div class="label">Status Servis</div>
+      <table>
+        <thead><tr><th>Servis</th><th>Status</th><th>Latency</th></tr></thead>
+        <tbody id="services"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <script>
+    const REFRESH_MS = 3000;   // selang masa refresh
+    const MAX_POINTS = 20;
+
+    const chart = new Chart(document.getElementById('chart'), {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [
+          { label: 'CPU', data: [], borderColor: '#3b82f6', tension: 0.3 },
+          { label: 'Memori', data: [], borderColor: '#22c55e', tension: 0.3 }
+        ]
+      },
+      options: {
+        animation: false,
+        scales: { y: { min: 0, max: 100, ticks: { color: '#94a3b8' } }, x: { ticks: { color: '#94a3b8' } } },
+        plugins: { legend: { labels: { color: '#e2e8f0' } } }
+      }
+    });
+
+    // GANTI fungsi ini dengan panggilan API sebenar, contoh:
+    //   const res = await fetch('/api/metrics'); return await res.json();
+    async function getMetrics() {
+      const rand = (min, max) => Math.round(min + Math.random() * (max - min));
+      const status = () => { const r = Math.random(); return r > 0.15 ? 'up' : r > 0.05 ? 'slow' : 'down'; };
+      return {
+        cpu: rand(10, 90), mem: rand(30, 80), rpm: rand(800, 1500), errors: rand(0, 12),
+        services: [
+          { name: 'Web', status: status(), latency: rand(20, 200) },
+          { name: 'API', status: status(), latency: rand(30, 300) },
+          { name: 'Database', status: status(), latency: rand(5, 80) },
+          { name: 'Cache', status: status(), latency: rand(1, 20) }
+        ]
+      };
+    }
+
+    function render(m) {
+      document.getElementById('cpu').textContent = m.cpu + '%';
+      document.getElementById('mem').textContent = m.mem + '%';
+      document.getElementById('rpm').textContent = m.rpm.toLocaleString();
+      document.getElementById('err').textContent = m.errors;
+      document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+
+      const label = new Date().toLocaleTimeString();
+      chart.data.labels.push(label);
+      chart.data.datasets[0].data.push(m.cpu);
+      chart.data.datasets[1].data.push(m.mem);
+      if (chart.data.labels.length > MAX_POINTS) {
+        chart.data.labels.shift();
+        chart.data.datasets.forEach(d => d.data.shift());
+      }
+      chart.update();
+
+      document.getElementById('services').innerHTML = m.services.map(s => `
+        <tr>
+          <td>${s.name}</td>
+          <td><span class="dot ${s.status}"></span>${s.status.toUpperCase()}</td>
+          <td>${s.latency} ms</td>
+        </tr>`).join('');
+    }
+
+    async function refresh() {
+      try { render(await getMetrics()); }
+      catch (e) { console.error('Gagal ambil data:', e); }
+    }
+
+    refresh();
+    setInterval(refresh, REFRESH_MS);
+  </script>
+</body>
+</html>

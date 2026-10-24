@@ -241,6 +241,47 @@
   .role { display: inline-block; font-size: 10px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
   .timing { white-space: nowrap; }
   .owner-talents { color: var(--muted); font-size: 12px; }
+  /* Talent profile */
+  .prof-bar { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .prof-nav { display: flex; gap: 8px; align-items: center; }
+  .prof-head { grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 16px 24px; }
+  @media (max-width: 640px) { .prof-head { grid-template-columns: 1fr; } }
+  .prof-id { display: grid; gap: 6px; min-width: 0; }
+  .prof-name { font-size: 22px; line-height: 1.25; }
+  .prof-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+  .prof-kpi { display: grid; gap: 6px; justify-items: start; min-width: 180px; }
+  .prof-rating { font-family: var(--mono); font-size: 34px; font-weight: 500; line-height: 1; }
+  .prof-rating small { font-size: 15px; color: var(--muted); }
+  .ind-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  @media (max-width: 480px) { .ind-grid { grid-template-columns: 1fr; } }
+  .ind { border: 1px solid var(--line); border-left: 3px solid var(--line); border-radius: 8px; padding: 10px 12px; display: grid; gap: 4px; align-content: start; }
+  .ind.done { border-left-color: var(--ok); } .ind.open { border-left-color: var(--bad); }
+  .ind .kind { font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .ind .name { font-weight: 600; font-size: 13px; }
+  .ind .state { font-size: 12px; }
+  .ind.done .state { color: var(--ok); } .ind.open .state { color: var(--bad); }
+  .ptl { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+  .ptl li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 10px; position: relative; padding-bottom: 14px; }
+  .ptl li::before { content: ""; position: absolute; left: 10px; top: 20px; bottom: 0; width: 2px; background: var(--line); }
+  .ptl li:last-child::before { display: none; }
+  .ptl .dot { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--line); background: var(--surface); display: grid; place-items: center; font-size: 11px; color: var(--muted); position: relative; z-index: 1; }
+  .ptl li.done .dot { background: var(--ok); border-color: var(--ok); color: var(--surface); }
+  .ptl li.open .dot { border-color: var(--bad); color: var(--bad); }
+  .ptl li.next .dot { border-color: var(--accent); background: var(--info-bg); color: var(--accent); }
+  .ptl .what { font-weight: 600; font-size: 13px; }
+  .ptl .when { font-size: 12px; color: var(--muted); }
+  .kv { margin: 0; display: grid; grid-template-columns: minmax(110px, auto) minmax(0, 1fr); gap: 6px 12px; font-size: 13px; }
+  .kv dt { color: var(--muted); }
+  .kv dd { margin: 0; overflow-wrap: anywhere; }
+  .copy { border: 0; background: none; color: var(--accent); cursor: pointer; font: inherit; font-size: 12px; padding: 0 0 0 6px; }
+  .peers { display: grid; gap: 6px; }
+  .peers button { display: flex; justify-content: space-between; align-items: center; gap: 8px; text-align: left; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); padding: 8px 10px; cursor: pointer; font: inherit; color: inherit; }
+  .peers button:hover { background: var(--sunken); }
+  .act-mini { display: grid; gap: 8px; }
+  .act-mini div { display: flex; justify-content: space-between; gap: 8px 12px; flex-wrap: wrap; align-items: center; border-bottom: 1px solid var(--line); padding-bottom: 8px; }
+  .act-mini div:last-child { border-bottom: 0; padding-bottom: 0; }
+  a.tlink, button.tlink { color: inherit; text-decoration: none; border: 0; background: none; padding: 0; font: inherit; cursor: pointer; text-align: left; }
+  a.tlink:hover .who, button.tlink:hover .who { color: var(--accent); text-decoration: underline; }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
 
@@ -533,7 +574,7 @@
   <section id="view-actions" class="stack" hidden>
     <div class="panel">
       <div class="section-head">
-        <div><h2>Pending actions</h2><p>Every step still open for each talent to reach the KPI target (rating 4) and count towards the TPG Index. Click a card to filter the list, and click a row to update the talent.</p></div>
+        <div><h2>Pending actions</h2><p>Every step still open for each talent to reach the KPI target (rating 4) and count towards the TPG Index. Click a card to filter the list, and click a row to open the talent profile.</p></div>
         <span class="note" id="actTotal"></span>
       </div>
       <div class="act-cards" id="actCards"></div>
@@ -570,6 +611,66 @@
     </div>
   </section>
 
+  <!-- TALENT PROFILE (opened from the Talent and Pending Actions lists) -->
+  <section id="view-profile" class="stack" hidden>
+    <div class="prof-bar">
+      <button class="btn" type="button" id="profBack">‹ Back</button>
+      <div class="prof-nav">
+        <span class="note" id="profPos"></span>
+        <button class="btn" type="button" id="profPrev" aria-label="Previous talent">‹ Prev</button>
+        <button class="btn" type="button" id="profNext" aria-label="Next talent">Next ›</button>
+      </div>
+    </div>
+
+    <div class="panel prof-head">
+      <div class="prof-id">
+        <div class="tier" id="profUnit"></div>
+        <h2 class="prof-name" id="profName"></h2>
+        <div class="note" id="profTitle"></div>
+        <div class="prof-chips" id="profChips"></div>
+      </div>
+      <div class="prof-kpi">
+        <div class="label">Talent KPI</div>
+        <div class="prof-rating" id="profRating"></div>
+        <div class="note" id="profRatingNote"></div>
+        <button class="btn primary" type="button" id="profEdit">Edit talent</button>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="panel">
+        <h2>Growth indicators</h2>
+        <div class="ind-grid" id="profInd"></div>
+      </div>
+      <div class="panel">
+        <h2>Pending actions</h2>
+        <div id="profActions"></div>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="panel">
+        <h2>ETP journey</h2>
+        <ol class="ptl" id="profTimeline"></ol>
+      </div>
+      <div class="stack">
+        <div class="panel">
+          <h2>Staff details</h2>
+          <dl class="kv" id="profDetails"></dl>
+        </div>
+        <div class="panel">
+          <h2>Reporting line</h2>
+          <dl class="kv" id="profReport"></dl>
+        </div>
+        <div class="panel" id="profPeersPanel">
+          <h2 id="profPeersTitle">Same supervisor</h2>
+          <div class="peers" id="profPeers"></div>
+        </div>
+      </div>
+    </div>
+    <div class="note" id="profMeta"></div>
+  </section>
+
   <!-- TALENT -->
   <section id="view-talent" class="panel" hidden>
     <div class="toolbar">
@@ -601,7 +702,7 @@
       </table>
     </div>
     <div id="emptyList" class="empty" hidden></div>
-    <div class="note">Q2 = Forms Q2 Verified · S1/S2 = Stretch 1/2 · TDP = Core 1 AIL attendance · SV, Pres., HOD = Core 2 Kirkpatrick L3. Click a row to update.</div>
+    <div class="note">Q2 = Forms Q2 Verified · S1/S2 = Stretch 1/2 · TDP = Core 1 AIL attendance · SV, Pres., HOD = Core 2 Kirkpatrick L3. Click a row to open the talent profile.</div>
   </section>
 
 </div>
@@ -696,9 +797,13 @@
   let editingId = null;
 
   /* ---------- Navigasi ---------- */
-  const VIEWS = ['overview', 'summary', 'kpi', 'actions', 'talent'].filter(v => $('view-' + v));
+  const VIEWS = ['overview', 'summary', 'kpi', 'actions', 'talent', 'profile'].filter(v => $('view-' + v));
+  let lastListView = 'talent', profileId = null, pendingProfile = null;
   function showView(v) {
     if (v === 'ringkasan') v = 'summary';
+    if (/^p-/.test(v)) { pendingProfile = v.slice(2).toUpperCase(); tryPendingProfile(); return; }
+    if (v === 'profile' && !profileId) v = lastListView;
+    if (v !== 'profile') { lastListView = v; profileId = null; }
     if (!VIEWS.includes(v)) v = VIEWS[0];
     VIEWS.forEach(x => { $('view-' + x).hidden = x !== v; });
     document.querySelectorAll('nav a').forEach(a => { if (a.dataset.view === v) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
@@ -861,8 +966,8 @@
     } else empty.hidden = true;
   }
   ['q', 'fUnit', 'fSeries', 'fStage'].forEach(id => $(id).addEventListener('input', renderList));
-  $('rows').addEventListener('click', e => { const tr = e.target.closest('tr[data-id]'); if (tr) openForm(tr.dataset.id); });
-  $('rows').addEventListener('keydown', e => { if (e.key === 'Enter') { const tr = e.target.closest('tr[data-id]'); if (tr) openForm(tr.dataset.id); } });
+  $('rows').addEventListener('click', e => { const tr = e.target.closest('tr[data-id]'); if (tr) openProfile(tr.dataset.id, 'talent'); });
+  $('rows').addEventListener('keydown', e => { if (e.key === 'Enter') { const tr = e.target.closest('tr[data-id]'); if (tr) openProfile(tr.dataset.id, 'talent'); } });
 
   /* ---------- Status KPI ---------- */
   const TALENT_SCALE = { 5: 'Both Core + both Stretch', 4: '2 Core + 1 Stretch (target)', 3: '2 Core only', 2: 'Only 1 Core', 1: 'No Core indicator' };
@@ -933,6 +1038,7 @@
 
   /* ---------- Pending actions ---------- */
   // AIL series end dates (SIRI 1-5 sheets of the Master List); Kirkpatrick L3 window is 60-90 days after training
+  const SERIES_START = { 1: '2026-08-11', 2: '2026-08-18', 3: '2026-09-08', 4: '2026-09-14', 5: '2026-09-22' };
   const SERIES_END = { 1: '2026-08-13', 2: '2026-08-20', 3: '2026-09-10', 4: '2026-09-16', 5: '2026-09-24' };
   const DAY = 864e5;
   const ACTIONS = [
@@ -987,6 +1093,14 @@
       (!q || [a.t.name, a.t.staffNo, a.t.supervisor, a.t.ketuaJabatan, a.t.ketuaBahagian, a.owner].join(' ').toLowerCase().includes(q)));
   }
 
+  function sortedActions(list) {
+    const sort = $('actSort').value;
+    return list.sort((a, b) =>
+      sort === 'unit' ? unitOf(a.t).localeCompare(unitOf(b.t)) || b.urgency - a.urgency
+      : sort === 'name' ? String(a.t.name).localeCompare(String(b.t.name))
+      : b.urgency - a.urgency || String(a.t.name).localeCompare(String(b.t.name)));
+  }
+
   function renderActions() {
     const all = allActions();
     const talentsOpen = new Set(all.map(a => a.t.id)).size;
@@ -1002,11 +1116,7 @@
     $('actUnit').innerHTML = '<option value="">All departments / divisions</option>' + units.map(x => `<option value="${esc(x)}">${esc(titleCase(x))}</option>`).join('');
     $('actUnit').value = cu;
 
-    const sort = $('actSort').value;
-    const list = filteredActions(all).sort((a, b) =>
-      sort === 'unit' ? unitOf(a.t).localeCompare(unitOf(b.t)) || b.urgency - a.urgency
-      : sort === 'name' ? String(a.t.name).localeCompare(String(b.t.name))
-      : b.urgency - a.urgency || String(a.t.name).localeCompare(String(b.t.name)));
+    const list = sortedActions(filteredActions(all));
     $('actCount').textContent = all.length ? `${list.length} of ${all.length} actions` : '';
     const lvl = l => l === 'bad' ? 'p-bad' : l === 'warn' ? 'p-warn' : 'p-ok';
     $('actRows').innerHTML = list.map(a => `
@@ -1047,8 +1157,8 @@
   });
   ['actQ', 'actRole', 'actUnit', 'actSort'].forEach(id => $(id).addEventListener('input', renderActions));
   $('actType').addEventListener('input', () => { actCardFilter = $('actType').value; renderActions(); });
-  $('actRows').addEventListener('click', e => { const tr = e.target.closest('tr[data-id]'); if (tr) openForm(tr.dataset.id); });
-  $('actRows').addEventListener('keydown', e => { if (e.key === 'Enter') { const tr = e.target.closest('tr[data-id]'); if (tr) openForm(tr.dataset.id); } });
+  $('actRows').addEventListener('click', e => { const tr = e.target.closest('tr[data-id]'); if (tr) openProfile(tr.dataset.id, 'actions'); });
+  $('actRows').addEventListener('keydown', e => { if (e.key === 'Enter') { const tr = e.target.closest('tr[data-id]'); if (tr) openProfile(tr.dataset.id, 'actions'); } });
 
   $('actCsvBtn').onclick = () => {
     const cell = v => { const s = String(v ?? ''); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
@@ -1058,7 +1168,118 @@
     saveCsv(`ETP-2026-pending-actions-${new Date().toISOString().slice(0, 10)}.csv`, '﻿' + [head, ...rows].map(r => r.map(cell).join(',')).join('\r\n'));
   };
 
-  function renderAll() { renderOverview(); renderSummary(); renderKpi(); renderActions(); renderFilters(); renderList(); }
+  /* ---------- Talent profile ---------- */
+  function profileList() {
+    // Prev/next follows the list the profile was opened from
+    if (lastListView === 'actions') { const seen = new Set(); return sortedActions(filteredActions(allActions())).map(a => a.t.id).filter(id => !seen.has(id) && seen.add(id)); }
+    return filtered().map(t => t.id);
+  }
+  function openProfile(id, from) {
+    if (from) lastListView = from;
+    profileId = id; pendingProfile = null;
+    renderProfile();
+    VIEWS.forEach(x => { $('view-' + x).hidden = x !== 'profile'; });
+    document.querySelectorAll('nav a').forEach(a => { if (a.dataset.view === lastListView) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+    try { history.replaceState(null, '', '#p-' + id); } catch (_) {}
+    window.scrollTo(0, 0);
+  }
+  function tryPendingProfile() {
+    if (!pendingProfile) return;
+    if (talents.some(t => t.id === pendingProfile)) openProfile(pendingProfile);
+    else if (mode !== 'connecting') { pendingProfile = null; showView(lastListView); }
+  }
+  function closeProfile() {
+    profileId = null;
+    try { history.replaceState(null, '', '#' + lastListView); } catch (_) {}
+    showView(lastListView);
+  }
+  $('profBack').onclick = closeProfile;
+  $('profEdit').onclick = () => { if (profileId) openForm(profileId); };
+  const stepProfile = d => { const ids = profileList(), i = ids.indexOf(profileId); if (i >= 0 && ids[i + d]) openProfile(ids[i + d]); };
+  $('profPrev').onclick = () => stepProfile(-1);
+  $('profNext').onclick = () => stepProfile(1);
+  $('profPeers').addEventListener('click', e => { const b = e.target.closest('button[data-id]'); if (b) openProfile(b.dataset.id); });
+
+  function renderProfile() {
+    if (!profileId || $('view-profile').hidden && pendingProfile) return;
+    const t = talents.find(x => x.id === profileId);
+    if (!t) { if (profileId && mode !== 'connecting') closeProfile(); return; }
+    const ids = profileList(), i = ids.indexOf(profileId);
+    $('profPos').textContent = i >= 0 ? `${i + 1} of ${ids.length}` : '';
+    $('profPrev').disabled = !(i > 0); $('profNext').disabled = !(i >= 0 && i < ids.length - 1);
+
+    $('profUnit').textContent = titleCase(unitOf(t)) + (t.bahagian && unitOf(t) !== t.bahagian ? ' · ' + titleCase(t.bahagian) : '');
+    $('profName').textContent = titleCase(t.name);
+    $('profTitle').textContent = [t.staffNo, titleCase(t.title), t.gred].filter(Boolean).join(' · ');
+    const [sl, sc] = stageOf(t);
+    $('profChips').innerHTML = `<span class="pill ${sc}">${sl}</span><span class="pill ${verified(t) ? 'p-ok' : 'p-bad'}">Q2 ${esc(t.formQ2 || 'Pending')}</span>` +
+      (t.series ? `<span class="pill p-info">AIL Series ${t.series}</span>` : '<span class="pill p-bad">AIL not attended</span>');
+    const r = talentRating(t);
+    $('profRating').innerHTML = `${r}<small> / 5</small>`;
+    $('profRating').style.color = `var(${r >= 4 ? '--ok' : r === 3 ? '--warn' : '--bad'})`;
+    $('profRatingNote').textContent = `${growthCount(t)} of 4 indicators · ${r >= 4 ? 'target met' : 'target is rating 4'}`;
+
+    const ind = [
+      ['Core i', 'TDP Milestone Completion', t.idpAttendance, t.idpAttendance ? `Attended AIL Series ${t.series || '-'}` : 'AIL programme not attended'],
+      ['Core ii', 'Kirkpatrick Level 3', t.l3Hod, t.l3Hod ? 'HOD Form endorsed' : !t.l3Sv ? 'SV Form not submitted' : !t.l3Presentation ? 'Presentation not completed' : 'Awaiting HOD Form'],
+      ['Stretch i', 'Process Improvement', t.stretch1, t.stretch1 ? 'Completed' : 'Not completed'],
+      ['Stretch ii', 'Stretch Role / Extra-Mile', t.stretch2, t.stretch2 ? 'Completed' : 'Not completed']
+    ];
+    $('profInd').innerHTML = ind.map(([k, n, ok, st]) => `<div class="ind ${ok ? 'done' : 'open'}"><span class="kind">${k}</span><span class="name">${n}</span><span class="state">${ok ? '✓' : '✗'} ${esc(st)}</span></div>`).join('');
+
+    const acts = pendingFor(t);
+    const lvl = l => l === 'bad' ? 'p-bad' : l === 'warn' ? 'p-warn' : 'p-ok';
+    $('profActions').innerHTML = acts.length
+      ? `<div class="act-mini">${acts.map(a => `<div><span><b>${esc(a.title)}</b><br><span class="sub">${a.role}: ${esc(a.role === 'GHCD' ? 'GHCD' : titleCase(a.owner) || 'Not recorded')}</span></span><span class="pill ${lvl(a.level)}">${esc(a.timing)}</span></div>`).join('')}</div>`
+      : '<p class="note">No pending actions. This talent has met the KPI target.</p>';
+
+    // Personal journey
+    const today = dayStart(Date.now()), sEnd = parseDay(SERIES_END[Number(t.series)]), sStart = parseDay(SERIES_START[Number(t.series)]);
+    const d = ms => fmtDate(new Date(ms).toISOString().slice(0, 10));
+    const pres = parseDay(t.presentationDate);
+    const steps = [
+      { what: 'Awareness & potential identification', when: 'Oct 2025 · Harrison assessment', state: 'done' },
+      { what: 'AIL development programme (Core i)', when: t.series && sStart ? `Series ${t.series} · ${d(sStart)} – ${d(sEnd)}` : 'Not attended', state: t.idpAttendance ? 'done' : 'open' },
+      { what: 'Q2 status form', when: t.formQ2 || 'Pending', state: verified(t) ? 'done' : 'open' },
+      { what: 'Kirkpatrick L3: SV Form', when: t.l3Sv ? 'Submitted by supervisor' : sEnd ? `Window ${d(sEnd + 60 * DAY)} – ${d(sEnd + 90 * DAY)}` : 'After AIL attendance', state: t.l3Sv ? 'done' : 'open' },
+      { what: 'Kirkpatrick L3: Presentation', when: pres ? (t.l3Presentation ? `Presented ${fmtDate(t.presentationDate)}` : pres >= today ? `Scheduled ${fmtDate(t.presentationDate)}` : `Planned ${fmtDate(t.presentationDate)}, not recorded`) : 'No date recorded', state: t.l3Presentation ? 'done' : 'open' },
+      { what: 'Kirkpatrick L3: HOD Form', when: t.l3Hod ? 'Endorsed' : 'Endorsement by ' + (titleCase(hodOf(t)) || 'HOD'), state: t.l3Hod ? 'done' : 'open' },
+      { what: 'Stretch indicators', when: `${stretchCount(t)} of 2 completed`, state: stretchCount(t) ? 'done' : 'open' },
+      { what: 'Forms Q3 / Q4', when: `Q3 ${t.formQ3 || 'Pending'} · Q4 ${t.formQ4 || 'Pending'}`, state: t.formQ3 === 'Verified' && t.formQ4 === 'Verified' ? 'done' : 'later' },
+      { what: 'On-the-job training', when: 'Jan 2027 · 9 months', state: 'later' },
+      { what: 'Leadership readiness evaluation', when: 'Oct 2027', state: 'later' }
+    ];
+    const firstOpen = steps.findIndex(x => x.state === 'open');
+    $('profTimeline').innerHTML = steps.map((x, k) => {
+      const cls = k === firstOpen ? 'next' : x.state === 'done' ? 'done' : x.state === 'open' ? 'open' : '';
+      const mark = x.state === 'done' ? '✓' : k === firstOpen ? '•' : '';
+      return `<li class="${cls}"><span class="dot">${mark}</span><div><div class="what">${esc(x.what)}</div><div class="when">${esc(x.when)}</div></div></li>`;
+    }).join('');
+
+    const g = { P: 'Female', L: 'Male' }[t.gender] || '-';
+    const email = t.email ? `<span class="sel">${esc(t.email)}</span><button class="copy" type="button" data-copy="${esc(t.email)}">Copy</button>` : '-';
+    $('profDetails').innerHTML = [['Staff no.', esc(t.staffNo)], ['Title', esc(titleCase(t.title) || '-')], ['Grade', esc(t.gred || '-')], ['Gender', g], ['Email', email],
+      ['Department', esc(titleCase(t.jabatan) || '-')], ['Division', esc(titleCase(t.bahagian) || '-')], ['Initiative', esc(t.initiative || '-')]]
+      .map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
+    $('profReport').innerHTML = [['Immediate supervisor', realName(t.supervisor)], ['Head of division', realName(t.ketuaBahagian)], ['Head of department', realName(t.ketuaJabatan)]]
+      .map(([k, v]) => `<dt>${k}</dt><dd>${esc(titleCase(v) || '-')}</dd>`).join('');
+
+    const peers = talents.filter(x => x.id !== t.id && realName(x.supervisor) && realName(x.supervisor) === realName(t.supervisor));
+    $('profPeersPanel').hidden = !peers.length;
+    $('profPeersTitle').textContent = realName(t.supervisor) ? `Same supervisor (${peers.length})` : 'Same supervisor';
+    $('profPeers').innerHTML = peers.length
+      ? peers.map(x => `<button type="button" data-id="${esc(x.id)}"><span><span class="who">${esc(titleCase(x.name))}</span><br><span class="sub">${esc(x.staffNo)}</span></span>${ratingChip(talentRating(x))}</button>`).join('')
+      : '<p class="note">No other talent under this supervisor.</p>';
+
+    $('profMeta').textContent = t.source ? 'Source: ' + t.source + (t.updatedAt ? ' · last updated ' + fmtDate(new Date(t.updatedAt).toISOString().slice(0, 10)) : '') : '';
+  }
+  $('profDetails').addEventListener('click', async e => {
+    const b = e.target.closest('button[data-copy]'); if (!b) return;
+    try { await navigator.clipboard.writeText(b.dataset.copy); toast('Email copied'); }
+    catch (_) { const r = document.createRange(); r.selectNodeContents(b.previousElementSibling); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); toast('Email selected. Copy it with your keyboard or menu.'); }
+  });
+
+  function renderAll() { renderOverview(); renderSummary(); renderKpi(); renderActions(); renderFilters(); renderList(); renderProfile(); tryPendingProfile(); }
 
   /* ---------- Borang ---------- */
   const TXT = { staffNo: 'fStaffNo', gred: 'fGred', name: 'fName', title: 'fTitle', jabatan: 'fJabatan', bahagian: 'fBahagian', email: 'fEmail', gender: 'fGender', supervisor: 'fSupervisor', ketuaBahagian: 'fKB', ketuaJabatan: 'fKJ', formQ2: 'fQ2', formQ3: 'fQ3', formQ4: 'fQ4', initiative: 'fInit', presentationDate: 'fPresDate' };

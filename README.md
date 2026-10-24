@@ -5,8 +5,7 @@ funnel, KPI status by department and talent, and an editable talent list.
 
 ## Files
 
-- `public/index.html` — public build of the portal (published by Netlify). The KPI reference section
-  (rating scales and indicator definitions) is not included; it is only in the private claude.ai portal.
+- `public/index.html` — the portal (published by Netlify)
 - `netlify.toml` — Netlify settings: publishes `public/` only and asks search engines not to index the site
 - `dashboard.html` — the original sample monitor dashboard (not published)
 

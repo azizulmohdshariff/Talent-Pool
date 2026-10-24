@@ -174,6 +174,53 @@
   .refgrid h3 { font-size: 13px; margin: 0 0 6px; }
   .refgrid p, .refgrid li { font-size: 13px; line-height: 1.5; }
   .refgrid ul { margin: 0; padding-left: 18px; }
+  /* Overview */
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  @media (max-width: 860px) { .grid3 { grid-template-columns: 1fr; } }
+  .ov-hero { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); align-items: stretch; gap: 20px; }
+  @media (max-width: 860px) { .ov-hero { grid-template-columns: 1fr; } }
+  .ov-hero-text { display: grid; gap: 10px; align-content: start; }
+  .ov-title { font-size: 24px; line-height: 1.2; }
+  .ov-lead { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.6; max-width: 68ch; }
+  .ov-stats { display: flex; gap: 8px 20px; flex-wrap: wrap; }
+  .ov-stats div { display: grid; }
+  .ov-stats b { font-family: var(--mono); font-size: 20px; font-weight: 500; font-variant-numeric: tabular-nums; }
+  .ov-stats span { color: var(--muted); font-size: 12px; }
+  .ov-goal { background: var(--info-bg); border-radius: 8px; padding: 14px 16px; display: grid; gap: 6px; align-content: center; }
+  .ov-goal p { margin: 0; font-size: 15px; font-weight: 600; line-height: 1.45; text-wrap: balance; }
+  .ov-card p, .ov-lead-card p { margin: 0; line-height: 1.55; }
+  .ov-lead-card { border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; display: grid; gap: 6px; align-content: start; }
+  .panel > h2 + .grid3, .panel > h2 + .ov-num, .panel > h2 + .ov-dl { margin-top: 0; }
+  .journey { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(6, 1fr); gap: 0; position: relative; }
+  .journey li { position: relative; display: grid; gap: 8px; align-content: start; padding-right: 10px; }
+  .journey li::before { content: ""; position: absolute; top: 14px; left: 0; right: 0; height: 2px; background: var(--line); z-index: 0; }
+  .journey li:first-child::before { left: 14px; } .journey li:last-child::before { right: auto; width: 14px; }
+  .journey li.done::before { background: var(--accent2); }
+  .j-dot { position: relative; z-index: 1; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-family: var(--mono); font-weight: 500; background: var(--surface); border: 2px solid var(--line); color: var(--muted); }
+  .journey li.done .j-dot { background: var(--accent2); border-color: var(--accent2); color: var(--surface); }
+  .journey li.now .j-dot { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); box-shadow: 0 0 0 4px var(--info-bg); }
+  .j-body { display: grid; gap: 2px; font-size: 13px; }
+  .j-when { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+  .j-sub { color: var(--muted); font-size: 12px; }
+  .journey li.now .j-body b::after { content: " · Now"; color: var(--accent); }
+  @media (max-width: 760px) {
+    .journey { grid-template-columns: 1fr; gap: 14px; }
+    .journey li { grid-template-columns: 30px 1fr; gap: 12px; padding: 0; }
+    .journey li::before { top: 30px; bottom: -14px; left: 14px; right: auto; width: 2px; height: auto; }
+    .journey li:first-child::before { left: 14px; } .journey li:last-child::before { display: none; }
+  }
+  .ov-warn { border-left: 3px solid var(--bad); background: var(--bad-bg); border-radius: 0 8px 8px 0; padding: 10px 12px; font-size: 13px; }
+  .ov-step { border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; display: grid; gap: 6px; align-content: start; }
+  .ov-step-head { font-weight: 600; }
+  .ov-step ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 13px; line-height: 1.45; }
+  .ov-step ul.cols2 { grid-template-columns: 1fr 1fr; column-gap: 20px; }
+  @media (max-width: 420px) { .ov-step ul.cols2 { grid-template-columns: 1fr; } }
+  .ov-dl { margin: 0; display: grid; gap: 4px; }
+  .ov-dl dt { font-weight: 600; margin-top: 6px; }
+  .ov-dl dd { margin: 0; color: var(--muted); line-height: 1.5; }
+  .ov-num { margin: 0; padding-left: 20px; display: grid; gap: 8px; line-height: 1.5; }
+  .ov-quote { margin: 4px 0 0; text-align: center; font-size: 18px; font-weight: 600; display: grid; gap: 4px; text-wrap: balance; }
+  .ov-quote span { font-size: 12px; font-weight: 400; color: var(--muted); }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
 
@@ -181,6 +228,7 @@
   <div class="top">
     <div class="brand"><h1>Talent Pool Portal</h1><small>Emerging Talent Program (ETP) 2026 · KPI 10 Talent Pool Growth Index <span id="whoami"></span></small></div>
     <nav aria-label="Portal sections">
+      <a href="#overview" data-view="overview">Overview</a>
       <a href="#summary" data-view="summary">Summary</a>
       <a href="#kpi" data-view="kpi">KPI Status</a>
       <a href="#talent" data-view="talent">Talent</a>
@@ -204,8 +252,137 @@
     <div class="error" id="localError" hidden></div>
   </section>
 
+  <!-- OVERVIEW -->
+  <section id="view-overview" class="stack">
+    <div class="panel ov-hero">
+      <div class="ov-hero-text">
+        <div class="tier">Personal Growth &amp; Competency</div>
+        <h2 class="ov-title">Emerging Talent Program (ETP) 2026</h2>
+        <p class="ov-lead">“You are part of TH’s future talent.” ETP is designed to strengthen future leadership and support TH’s long-term sustainability. Through the programme, talent are guided to become capable leaders who are ready for the organisation’s future challenges.</p>
+        <div class="ov-stats" id="ovStats"></div>
+      </div>
+      <div class="ov-goal">
+        <div class="label">Programme goal</div>
+        <p>Build talent who are ready to take on future roles and strengthen leadership succession planning.</p>
+      </div>
+    </div>
+
+    <div class="grid3">
+      <div class="panel ov-card"><div class="label">What ETP is</div><p>A structured development journey of <b>12–24 months</b> focused on leadership readiness and leadership behaviour.</p></div>
+      <div class="panel ov-card"><div class="label">What ETP is not</div><p>Not a guarantee of promotion, and not an automatic qualification or entitlement.</p></div>
+      <div class="panel ov-card"><div class="label">Commitment</div><p>ETP is a development opportunity that requires continuous commitment and effort from each talent.</p></div>
+    </div>
+
+    <div class="panel">
+      <div class="section-head"><div><h2>Programme journey</h2><p>The Emerging Talents journey runs for 12–24 months, from potential identification to leadership readiness.</p></div><span class="note" id="ovNowNote"></span></div>
+      <ol class="journey" id="journey">
+        <li data-start="2025-10" data-end="2026-03"><span class="j-dot">1</span><div class="j-body"><span class="j-when">Oct 2025 · 6 months</span><b>Awareness &amp; potential identification</b><span class="j-sub">Harrison assessment session</span></div></li>
+        <li data-start="2026-06" data-end="2026-08"><span class="j-dot">2</span><div class="j-body"><span class="j-when">Jun 2026 · 3 months</span><b>Learning progress</b><span class="j-sub">Development training (AIL)</span></div></li>
+        <li data-start="2026-10" data-end="2026-12"><span class="j-dot">3</span><div class="j-body"><span class="j-when">Oct – Dec 2026 · 3 months</span><b>Supervisor monitoring (PPP)</b><span class="j-sub">Learning application and behaviour change</span></div></li>
+        <li data-start="2027-01" data-end="2027-09"><span class="j-dot">4</span><div class="j-body"><span class="j-when">Jan 2027 · 9 months</span><b>On-the-job training</b><span class="j-sub">Learning through real work assignments</span></div></li>
+        <li data-start="2027-10" data-end="2027-12"><span class="j-dot">5</span><div class="j-body"><span class="j-when">Oct 2027 · 3 months</span><b>Leadership readiness evaluation</b><span class="j-sub">Evaluation readiness</span></div></li>
+        <li data-start="2028-01" data-end="2099-12"><span class="j-dot">6</span><div class="j-body"><span class="j-when">Outcome</span><b>Emerging Leaders</b><span class="j-sub">Ready for critical and leadership roles in TH</span></div></li>
+      </ol>
+      <div class="ov-warn"><b>Participation is withdrawn if</b> the performance rating does not reach <i>excellent</i> (2 consecutive years), or the talent is subject to disciplinary action or proceedings.</div>
+    </div>
+
+    <div class="panel">
+      <div class="section-head"><div><h2>Why talent were selected</h2></div></div>
+      <div class="grid3 flow">
+        <div class="ov-step">
+          <div class="ov-step-head">1 · Nominated by management</div>
+          <div class="label">Pre-screening criteria</div>
+          <ul>
+            <li>Permanent or contract staff (minimum 1 year of service)</li>
+            <li>Holds a bachelor’s degree</li>
+            <li>Aged 50 and below</li>
+            <li>Excellent performance rating for 2 consecutive years</li>
+            <li>No disciplinary action or proceedings in the last 5 years</li>
+          </ul>
+        </div>
+        <div class="ov-step">
+          <div class="ov-step-head">2 · Assessment &amp; potential</div>
+          <div class="label">Harrison Leadership Competencies</div>
+          <ul class="cols2">
+            <li>Communication</li><li>Impact and Influence</li><li>Energizing People</li><li>Leading People</li><li>Innovation</li>
+            <li>Strategic Thinking</li><li>Problem Solving</li><li>Resilience and Perseverance</li><li>Learning Agility</li><li>Achievement Orientation</li>
+          </ul>
+        </div>
+        <div class="ov-step">
+          <div class="ov-step-head">3 · Development</div>
+          <div class="label">Programme measures &amp; continuous improvement</div>
+          <ul>
+            <li>Productivity / process improvement initiative</li>
+            <li>Individual Development Plan (IDP) targets: learning progress</li>
+            <li>Kirkpatrick Level 3 assessment: behaviour change</li>
+            <li>Stretch role / extra-mile contribution / voluntary involvement</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="panel">
+        <h2>Not just training, a development journey</h2>
+        <dl class="ov-dl">
+          <dt>Structured development journey</dt><dd>Over 12 to 24 months.</dd>
+          <dt>Experiential learning</dt><dd>Learning through real work experience, not just theory. Every assignment and challenge is a chance to grow.</dd>
+          <dt>Reflection and application</dt><dd>Talent are encouraged to reflect and apply what they learn in their daily work.</dd>
+        </dl>
+      </div>
+      <div class="panel">
+        <h2>How we engage talent</h2>
+        <dl class="ov-dl">
+          <dt>Check-ins</dt><dd>Regular check-ins and reflection to make sure personal development stays on track throughout ETP.</dd>
+          <dt>Collaboration</dt><dd>IDP discussions with the supervisor to align development goals with TH’s needs and the talent’s career aspirations.</dd>
+          <dt>Progress</dt><dd>Stretch role assignments and peer learning through practical experience and collaboration.</dd>
+        </dl>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>What will be developed</h2>
+      <div class="grid3">
+        <div class="ov-lead-card"><div class="tier">Lead Self</div><p>Deep self-awareness, resilience in facing challenges, and a commitment to continuous learning for personal development.</p></div>
+        <div class="ov-lead-card"><div class="tier">Lead Others</div><p>Effective communication, the ability to influence others, and motivation to build successful teams.</p></div>
+        <div class="ov-lead-card"><div class="tier">Lead Organisation</div><p>Strategic thinking, creative problem solving, and innovation to drive TH’s success.</p></div>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="panel">
+        <h2>What is expected of talent</h2>
+        <ol class="ov-num">
+          <li>Drive their own <b>Individual Development Plan (IDP)</b> with full responsibility.</li>
+          <li><b>Apply learning</b> in daily work to make sure it has a real impact.</li>
+          <li>Complete at least <b>2 development indicators / initiatives</b> during the programme.</li>
+        </ol>
+      </div>
+      <div class="panel">
+        <h2>How progress is measured</h2>
+        <ol class="ov-num">
+          <li><b>IDP progress &amp; behaviour change.</b> IDP progress is monitored regularly; behaviour change is observed and assessed by the supervisor.</li>
+          <li><b>Process improvement initiatives.</b> Improvement initiatives, stretch roles, extra-mile contributions and voluntary involvement are recorded as evidence of development.</li>
+          <li><b>Core assessment.</b> Talent must achieve a minimum rating of 3 in the Core assessment, reflecting their competency and readiness for future roles.</li>
+        </ol>
+        <p class="note">The KPI revision of September 2026 sets the talent target at rating 4 (2 Core + 1 Stretch). See the KPI Status tab.</p>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Benefits for talent</h2>
+      <div class="grid3">
+        <div class="ov-lead-card"><div class="tier">Greater self-awareness</div><p>Understand personal strengths and weaknesses more deeply, and recognise their real potential to grow as TH’s future leaders.</p></div>
+        <div class="ov-lead-card"><div class="tier">Exposure &amp; confidence</div><p>Opportunities to face a range of situations and challenges, building confidence through practical experience and structured learning.</p></div>
+        <div class="ov-lead-card"><div class="tier">Ready for future roles</div><p>Equipped with the skills and competencies needed to take on critical and leadership roles in TH.</p></div>
+      </div>
+    </div>
+
+    <p class="ov-quote">“This is a beginning, not an end.”<span>Source: ETP introduction session, 15 May 2026, TH Talent Hub.</span></p>
+  </section>
+
   <!-- SUMMARY -->
-  <section id="view-summary" class="stack">
+  <section id="view-summary" class="stack" hidden>
     <div class="kpis">
       <div class="panel kpi accent"><div class="label">Total talent</div><div class="value" id="kTotal">0</div><div class="note">identified in ETP 2026</div></div>
       <div class="panel kpi" id="kTpgCard"><div class="label">Official TPG Index</div><div class="value" id="kTpg">0%</div><div class="note" id="kTpgNote">0 talent achieved &amp; verified</div></div>
@@ -457,9 +634,10 @@
   let editingId = null;
 
   /* ---------- Navigasi ---------- */
-  const VIEWS = ['summary', 'kpi', 'talent'];
+  const VIEWS = ['overview', 'summary', 'kpi', 'talent'];
   function showView(v) {
-    if (!VIEWS.includes(v)) v = 'summary';
+    if (v === 'ringkasan') v = 'summary';
+    if (!VIEWS.includes(v)) v = 'overview';
     VIEWS.forEach(x => { $('view-' + x).hidden = x !== v; });
     document.querySelectorAll('nav a').forEach(a => { if (a.dataset.view === v) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
   }
@@ -672,7 +850,25 @@
     }).join('') + (n ? `<tr class="total"><td>Corporate</td><td class="num">${n}</td><td class="num">${tpg}</td><td class="num">${fmtPct(tpgV)}</td><td class="c">${ratingChip(dr)}</td><td class="num">${need(.65) || '<span class="tick y">✓</span>'}</td><td class="num">${need(.8) || '<span class="tick y">✓</span>'}</td></tr>` : '');
   }
 
-  function renderAll() { renderSummary(); renderKpi(); renderFilters(); renderList(); }
+  /* ---------- Overview ---------- */
+  function renderOverview() {
+    const n = talents.length, units = new Set(talents.map(unitOf)).size;
+    const series = new Set(talents.map(t => t.series).filter(Boolean)).size;
+    $('ovStats').innerHTML = n
+      ? `<div><b>${n}</b><span>talent in the pool</span></div><div><b>${units}</b><span>departments / divisions</span></div><div><b>${series}</b><span>AIL series held</span></div>`
+      : '';
+    // Mark the current stage of the journey from today's date
+    const ym = new Date().toISOString().slice(0, 7);
+    let nowLabel = '';
+    document.querySelectorAll('#journey li').forEach(li => {
+      const done = ym > li.dataset.end, now = ym >= li.dataset.start && ym <= li.dataset.end;
+      li.classList.toggle('done', done); li.classList.toggle('now', now);
+      if (now) nowLabel = 'Current stage: ' + li.querySelector('b').textContent;
+    });
+    $('ovNowNote').textContent = nowLabel;
+  }
+
+  function renderAll() { renderOverview(); renderSummary(); renderKpi(); renderFilters(); renderList(); }
 
   /* ---------- Borang ---------- */
   const TXT = { staffNo: 'fStaffNo', gred: 'fGred', name: 'fName', title: 'fTitle', jabatan: 'fJabatan', bahagian: 'fBahagian', email: 'fEmail', gender: 'fGender', supervisor: 'fSupervisor', ketuaBahagian: 'fKB', ketuaJabatan: 'fKJ', formQ2: 'fQ2', formQ3: 'fQ3', formQ4: 'fQ4', initiative: 'fInit', presentationDate: 'fPresDate' };
